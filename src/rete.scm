@@ -18,3 +18,23 @@
   (syntax-rules ()
     ((retract! fact ...)
      (remove-facts! (list (quote fact) ...)))))
+
+(define *rules* '())
+
+(define (make-rule pattern body)
+  (list pattern body))
+
+(define (rule-pattern rule)
+  (car rule))
+
+(define (rule-body rule)
+  (cadr rule))
+
+(define (add-rule! rule)
+  (set! *rules* (cons rule *rules*)))
+
+(define (remove-rule! rule)
+  (set! *rules*
+        (filter (lambda (r)
+                  (not (equal? (car r) (car rule))))
+                *rules*)))
