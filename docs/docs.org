@@ -15,7 +15,7 @@
 #+latex: \vfill \vfill \vfill
 #+latex: \pagebreak
 
-* Opis
+* Wstęp
 Celem projektu jest zbadanie możliwości oraz opłacalności implementacji mechanizmu obsługi zdarzeń w systemie programistycznym z wykorzystaniem systemów regułowych z *wnioskowaniem w przód*.
 
 Mechanizm ów ma za zadanie ułatwić obsługę zdarzeń zachodzących w systemie poprzez umożliwienie definiowania reguł i faktów w sposób deklaratywny i zintegrowany ze składnią i semantyką języka programowania, w którym jest wykorzystywany:
@@ -128,31 +128,29 @@ Posiadając następujący moduł pobierający dane GPS z czujnika:
 #+LaTeX: \noindent
 ...system działający na dotychczasowym węźle automatycznie będzie wyświetlał dane z większą dokładnością.
 
-* Zespół
-[[mailto:kajtek@idorobots.org][Kajetan Rzepecki]]
 
-* Wymagania
-** Milestone 1 - Analiza problemu
+* Projekt
+- https://github.com/Idorobots/rules/
+
+** Analiza problemu
 - Opis zastosowania systemów regułowych w domenie problemu
 - Analiza możliwości i przydatności jego zastosowania
 - Analiza podobnych rozwiązań
 
-** Milestone 2 - Szkic rozwiązania
+** Szkic rozwiązania
 - Wybór algorytmów potrzebnych do implementacji
 - Porównanie różnych podejść
+- http://herzberg.ca.sandia.gov/jess/docs/52/rete.html
 
-** Milestone 3 - Prototyp rozwiązania
+** Prototyp rozwiązania
 - Implementacja wybranych algorytmów
 - Przykłady zastosowania systemu regułowego
 
-** Milestone 4 - Analiza proponowanego rozwiązania
+** Analiza proponowanego rozwiązania
 - Analiza wydajności i opłacalności proponowanego rozwiązania
 - Wnioski i raport końcowy
 
-* Spotkania
-* Projekt
-https://github.com/Idorobots/rules/
+* Bibliografia
+- Charles L. Forgy, /Rete: A Fast Algorithm for the Many Pattern / Many Object Pattern Match Problem/, Artificial Intelligence 19 (1982), 17-37, http://dl.acm.org/citation.cfm?id=115736
 
-* Sprawozdanie
-* Materiały
 - Hesam Samimi, Chris Deaton, Yoshiki Ohshima, Alessandro Warth, and Todd Millstein, /Call by Meaning/, In Proceedings of the 2014 ACM International Symposium on New Ideas, New Paradigms, and Reflections on Programming & Software (Onward! 2014), ACM, New York, NY, USA, 11-28, http://doi.acm.org/10.1145/2661136.2661152
