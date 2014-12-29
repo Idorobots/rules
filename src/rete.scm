@@ -66,9 +66,9 @@
   ;; TODO Actually merge the networks...
   (if (null? original)
       new
-      (lambda (fact)
-        (append (original fact)
-                (new fact)))))
+      (lambda (action fact)
+        (append (original action fact)
+                (new action fact)))))
 
 (define (compile-rule rule)
   (let ((nodes (compile-pattern (rule-pattern rule)
@@ -201,7 +201,7 @@
   (syntax-rules ()
     ((whenever pattern action ...)
      (let ((rule (make-rule (quote pattern)
-                            (node-f (lambda (bindings)
+                            (node-f (lambda bindings
                                       ;; FIXME actually make the bindings usable.
                                       action ...)))))
        (add-rule! rule)))))
@@ -210,6 +210,9 @@
 
 ;; Exmaple usage:
 (reset!)
+
+(whenever (provides ?x foo)
+          (display "new foo!\n"))
 
 (whenever (and (a ?x module) (provides ?x gps))
           (display "new gps!\n"))
