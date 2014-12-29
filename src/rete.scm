@@ -21,7 +21,7 @@
 ;; Fact store handling:
 (define (add-facts! facts)
   (set! *fact-store* (append *fact-store* facts))
-  (map *rete*
+  (map (lambda (f) (*rete* 'assert f))
        facts))
 
 (define (remove-facts! facts)
@@ -29,7 +29,7 @@
         (filter (lambda (fact)
                   (not (member fact facts)))
                 *fact-store*))
-  (map *rete*
+  (map (lambda (f) (*rete* 'retract f))
        facts))
 
 ;; Rule handling:
@@ -69,10 +69,10 @@
 (define (compile-rule rule)
   (let ((nodes (compile-pattern (rule-pattern rule)
                                 (rule-body rule))))
-    (lambda (fact)
+    (lambda (action fact)
       (map (lambda (node)
              ;; NOTE Rete Network always starts with N Node1's.
-             (node fact))
+             (node action fact))
            nodes))))
 
 (define (compile-pattern pattern next-node)
@@ -104,27 +104,28 @@
 
 ;; Rete node types:
 (define (node-1 pattern next-node)
-  (lambda (fact)
+  (lambda (action fact)
     (let ((binding (unify pattern fact)))
       (unless (null? binding)
-          (next-node binding)))))
+          (next-node action binding)))))
 
 (define (node-2 next-node)
   (let ((l-mem null) ;; FIXME Should make this persistent.
-        (r-mem null)
-        (try-unify (lambda (fact memory)
-                     (map next-node
-                          (filter (lambda (f)
-                                    (merge fact f))
-                                  memory)))))
-    (list (lambda (bindings)
-            (unless (member bindings l-mem)
-              (set! l-mem (cons bindings l-mem))
-              (try-unify bindings r-mem)))
-          (lambda (bindings)
-            (unless (member bindings r-mem)
-              (set! r-mem (cons bindings r-mem))
-              (try-unify bindings l-mem))))))
+        (r-mem null))
+    (list (node-function next-node l-mem r-mem)
+          (node-function next-node r-mem l-mem))))
+
+(define-syntax node-function
+  (syntax-rules ()
+    ((node-function next-node my-memory other-memory)
+     (lambda (action bindings)
+       (let ((try-unify (lambda (bindings memory)
+                          (map next-node
+                               (filter (lambda (b) (merge bindings b))
+                                       memory)))))
+         (cond ((equal? action 'assert) (unless (member bindings my-memory)
+                                          (set! my-memory (cons bindings my-memory))
+                                          (try-unify bindings other-memory)))))))))
 
 (define (merge as bs)
   ;; NOTE O(max(len(as), len(bs)))
