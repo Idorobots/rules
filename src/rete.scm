@@ -124,14 +124,24 @@
     ((node-function next-node my-memory other-memory)
      (lambda (action bindings)
        (let ((try-unify (lambda (bindings memory)
-                          (map next-node
+                          (map (lambda (b) (next-node action b))
                                (filter (lambda (b) (merge bindings b))
                                        memory)))))
          (cond ((equal? action 'signal) (unless (member bindings my-memory)
                                           (try-unify bindings other-memory)))
                ((equal? action 'assert) (unless (member bindings my-memory)
                                           (set! my-memory (cons bindings my-memory))
-                                          (try-unify bindings other-memory)))))))))
+                                          (try-unify bindings other-memory)))
+               ((equal? action 'retract) (when (member bindings my-memory)
+                                           (try-unify bindings other-memory)
+                                           ;; NOTE We need to remove bindings from the rest of the network.
+                                           (set! my-memory (filter (lambda (b) (not (equal? bindings b)))
+                                                                   my-memory))))))))))
+
+(define (node-f f)
+  (lambda (action bindings)
+    (unless (equal? action 'retract)
+        (f bindings))))
 
 (define (merge as bs)
   ;; NOTE O(max(len(as), len(bs)))
@@ -191,9 +201,9 @@
   (syntax-rules ()
     ((whenever pattern action ...)
      (let ((rule (make-rule (quote pattern)
-                            (lambda bindings
-                              ;; FIXME actually make the bindings usable.
-                              action ...))))
+                            (node-f (lambda (bindings)
+                                      ;; FIXME actually make the bindings usable.
+                                      action ...)))))
        (add-rule! rule)))))
 
 ;; TODO Add a way to remove rules from the network.
@@ -216,3 +226,6 @@
 (assert! (a C module))
 
 (signal! (provides A gps))
+
+(retract! (a B module))
+(assert! (a B module))
