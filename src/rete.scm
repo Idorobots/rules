@@ -13,6 +13,11 @@
 (define *rules* null)
 (define *rete* null)
 
+(define (reset!)
+  (set! *fact-store* null)
+  (set! *rules* null)
+  (set! *rete* null))
+
 ;; Fact store handling:
 (define (add-facts! facts)
   (set! *fact-store* (append *fact-store* facts))
@@ -182,6 +187,8 @@
 ;; TODO Add a way to remove rules from the network.
 
 ;; Exmaple usage:
+(reset!)
+
 (whenever (and (a ?x module) (provides ?x gps))
           (display "new gps!\n"))
 
