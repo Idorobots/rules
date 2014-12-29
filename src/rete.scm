@@ -21,20 +21,20 @@
 ;; Fact store handling:
 (define (add-facts! facts)
   (set! *fact-store* (append *fact-store* facts))
-  (map (lambda (f) (*rete* 'assert f))
-       facts))
+  (for-each (lambda (f) (*rete* 'assert f))
+            facts))
 
 (define (signal-facts! facts)
-  (map (lambda (f) (*rete* 'signal f))
-       facts))
+  (for-each (lambda (f) (*rete* 'signal f))
+            facts))
 
 (define (remove-facts! facts)
   (set! *fact-store*
         (filter (lambda (fact)
                   (not (member fact facts)))
                 *fact-store*))
-  (map (lambda (f) (*rete* 'retract f))
-       facts))
+  (for-each (lambda (f) (*rete* 'retract f))
+            facts))
 
 ;; Rule handling:
 (define (make-rule pattern body)
@@ -59,16 +59,15 @@
 ;; Rete network handling:
 (define (extend-network! rule)
   (let ((network (compile-rule rule)))
-    (set! *rete*
-          (merge-networks *rete* network))))
+    (set! *rete* (merge-networks *rete* network))))
 
 (define (merge-networks original new)
   ;; TODO Actually merge the networks...
   (if (null? original)
       new
       (lambda (action fact)
-        (append (original action fact)
-                (new action fact)))))
+        (original action fact)
+        (new action fact))))
 
 (define (compile-rule rule)
   (let ((nodes (compile-pattern (rule-pattern rule)
