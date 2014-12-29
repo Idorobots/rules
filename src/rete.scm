@@ -24,6 +24,10 @@
   (map (lambda (f) (*rete* 'assert f))
        facts))
 
+(define (signal-facts! facts)
+  (map (lambda (f) (*rete* 'signal f))
+       facts))
+
 (define (remove-facts! facts)
   (set! *fact-store*
         (filter (lambda (fact)
@@ -123,7 +127,9 @@
                           (map next-node
                                (filter (lambda (b) (merge bindings b))
                                        memory)))))
-         (cond ((equal? action 'assert) (unless (member bindings my-memory)
+         (cond ((equal? action 'signal) (unless (member bindings my-memory)
+                                          (try-unify bindings other-memory)))
+               ((equal? action 'assert) (unless (member bindings my-memory)
                                           (set! my-memory (cons bindings my-memory))
                                           (try-unify bindings other-memory)))))))))
 
@@ -171,6 +177,11 @@
     ((assert! . facts)
      (add-facts! 'facts))))
 
+(define-syntax signal!
+  (syntax-rules ()
+    ((signal! . facts)
+     (signal-facts! 'facts))))
+
 (define-syntax retract!
   (syntax-rules ()
     ((retract! . facts)
@@ -203,3 +214,5 @@
 
 (assert! (provides C gps))
 (assert! (a C module))
+
+(signal! (provides A gps))
