@@ -1,7 +1,6 @@
 ;; Utils:
 (define (atom? thing)
-  (or (symbol? thing)
-     (number? thing)))
+  (or (symbol? thing) (number? thing)))
 
 (define (variable? pattern)
   (and (symbol? pattern) (starts-with? #\? pattern)))
@@ -16,13 +15,17 @@
 
 ;; Fact store handling:
 (define (add-facts! facts)
-  (set! *fact-store* (append *fact-store* facts)))
+  (set! *fact-store* (append *fact-store* facts))
+  (map *rete*
+       facts))
 
 (define (remove-facts! facts)
   (set! *fact-store*
         (filter (lambda (fact)
                   (not (member fact facts)))
-                *fact-store*)))
+                *fact-store*))
+  (map *rete*
+       facts))
 
 ;; Rule handling:
 (define (make-rule pattern body)
@@ -35,7 +38,8 @@
   (cadr rule))
 
 (define (add-rule! rule)
-  (set! *rules* (cons rule *rules*)))
+  (set! *rules* (cons rule *rules*))
+  (extend-network! rule))
 
 (define (remove-rule! rule)
   (set! *rules*
@@ -96,34 +100,26 @@
 ;; Rete node types:
 (define (node-1 pattern next-node)
   (lambda (fact)
-    (let ((binding (match pattern fact)))
+    (let ((binding (unify pattern fact)))
       (unless (null? binding)
           (next-node binding)))))
 
 (define (node-2 next-node)
   (let ((l-mem null) ;; FIXME Should make this persistent.
         (r-mem null)
-        (try-unify (lambda (l r)
-                     (map (lambda (binding)
-                            (unless (null? binding)
-                              (next-node binding)))
-                          (coherent? l r)))))
+        (try-unify (lambda (fact memory)
+                     (map next-node
+                          (filter (lambda (f)
+                                    (merge fact f))
+                                  memory)))))
     (list (lambda (bindings)
             (unless (member bindings l-mem)
               (set! l-mem (cons bindings l-mem))
-              (try-unify (list bindings) r-mem)))
+              (try-unify bindings r-mem)))
           (lambda (bindings)
             (unless (member bindings r-mem)
               (set! r-mem (cons bindings r-mem))
-              (try-unify l-mem (list bindings)))))))
-
-(define (coherent? as bs)
-  ;; FIXME O(K * L) * O(merge(K, L)), with K, L <= N.
-  (map (lambda (a)
-         (filter (lambda (b)
-                   (merge a b))
-                 bs))
-       as))
+              (try-unify bindings l-mem))))))
 
 (define (merge as bs)
   ;; NOTE O(max(len(as), len(bs)))
@@ -152,9 +148,9 @@
   (string<? (symbol->string (car a))
             (symbol->string (car b))))
 
-(define (match pattern value)
+(define (unify pattern value)
   (cond ((variable? pattern) (list (cons pattern value)))
-        ((list? pattern) (let ((bindings (map match pattern value)))
+        ((list? pattern) (let ((bindings (map unify pattern value)))
                            (if (memf null? bindings)
                                null
                                (apply append
@@ -166,18 +162,13 @@
 ;; Syntax for convenience:
 (define-syntax assert!
   (syntax-rules ()
-    ((assert! fact ...)
-     (let ((facts (list (quote fact) ...)))
-       (add-facts! facts)
-       (map *rete* facts)))))
+    ((assert! . facts)
+     (add-facts! 'facts))))
 
 (define-syntax retract!
   (syntax-rules ()
-    ((retract! fact ...)
-     (let ((facts (list (quote fact) ...)))
-       (remove-facts! facts)
-       ;; TODO Handle fact retraction.
-       ))))
+    ((retract! . facts)
+     (remove-facts! 'facts))))
 
 (define-syntax whenever
   (syntax-rules ()
@@ -186,8 +177,7 @@
                             (lambda bindings
                               ;; FIXME actually make the bindings usable.
                               action ...))))
-       (add-rule! rule)
-       (extend-network! rule)))))
+       (add-rule! rule)))))
 
 ;; TODO Add a way to remove rules from the network.
 
