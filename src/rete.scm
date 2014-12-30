@@ -37,14 +37,20 @@
             facts))
 
 ;; Rule handling:
-(define (make-rule pattern body)
-  (list pattern body))
+(define (make-rule name pattern body)
+  (list name pattern body (node-f name)))
 
-(define (rule-pattern rule)
+(define (rule-name rule)
   (car rule))
 
-(define (rule-body rule)
+(define (rule-pattern rule)
   (cadr rule))
+
+(define (rule-body rule)
+  (caddr rule))
+
+(define (rule-node rule)
+  (cadddr rule))
 
 (define (add-rule! rule)
   (set! *rules* (cons rule *rules*))
@@ -53,7 +59,7 @@
 (define (remove-rule! rule)
   (set! *rules*
         (filter (lambda (r)
-                  (not (equal? (car r) (car rule))))
+                  (not (equal? (rule-name rule) (rule-name r))))
                 *rules*)))
 
 ;; Rete network handling:
@@ -71,7 +77,7 @@
 
 (define (compile-rule rule)
   (let ((nodes (compile-pattern (rule-pattern rule)
-                                (rule-body rule))))
+                                (rule-node rule))))
     (lambda (action fact)
       (map (lambda (node)
              ;; NOTE Rete Network always starts with N Node1's.
@@ -137,10 +143,12 @@
                                            (set! my-memory (filter (lambda (b) (not (equal? bindings b)))
                                                                    my-memory))))))))))
 
-(define (node-f f)
+(define (node-f name)
   (lambda (action bindings)
-    (unless (equal? action 'retract)
-        (f bindings))))
+    (let ((r (assoc name *rules*)))
+      (when r
+        (unless (equal? action 'retract)
+          ((rule-body r) bindings))))))
 
 (define (merge as bs)
   ;; NOTE O(max(len(as), len(bs)))
@@ -199,11 +207,13 @@
 (define-syntax whenever
   (syntax-rules ()
     ((whenever pattern action ...)
-     (let ((rule (make-rule (quote pattern)
-                            (node-f (lambda bindings
-                                      ;; FIXME actually make the bindings usable.
-                                      action ...)))))
-       (add-rule! rule)))))
+     (let ((r (make-rule (gensym 'rule)
+                         'pattern
+                         (lambda bindings
+                           ;; FIXME actually make the bindings usable.
+                           action ...))))
+       (add-rule! r)
+       r))))
 
 ;; TODO Add a way to remove rules from the network.
 
@@ -213,8 +223,9 @@
 (whenever (provides ?x foo)
           (display "new foo!\n"))
 
-(whenever (and (a ?x module) (provides ?x gps))
-          (display "new gps!\n"))
+(define gps-appears
+  (whenever (and (a ?x module) (provides ?x gps))
+            (display "new gps!\n")))
 
 (assert! (a A module))
 (assert! (provides A foo))
@@ -231,3 +242,5 @@
 
 (retract! (a B module))
 (assert! (a B module))
+
+(remove-rule! gps-appears)
