@@ -8,6 +8,13 @@
 (define (starts-with? character symbol)
   (equal? character (car (string->list (symbol->string symbol)))))
 
+(define (complimentary f)
+  (lambda args (not (apply f args))))
+
+(define not-member (complimentary member))
+
+(define not-equal? (complimentary equal?))
+
 ;; State:
 (define *fact-store* null)
 (define *rules* null)
@@ -31,7 +38,7 @@
 (define (remove-facts! facts)
   (set! *fact-store*
         (filter (lambda (fact)
-                  (not (member fact facts)))
+                  (not-member fact facts))
                 *fact-store*))
   (for-each (lambda (f) (*rete* 'retract f))
             facts))
@@ -59,7 +66,8 @@
 (define (remove-rule! rule)
   (set! *rules*
         (filter (lambda (r)
-                  (not (equal? (rule-name rule) (rule-name r))))
+                  (not-equal? (rule-name rule)
+                              (rule-name r)))
                 *rules*)))
 
 ;; Rete network handling:
@@ -140,7 +148,7 @@
                ((equal? action 'retract) (when (member bindings my-memory)
                                            (try-unify bindings other-memory)
                                            ;; NOTE We need to remove bindings from the rest of the network.
-                                           (set! my-memory (filter (lambda (b) (not (equal? bindings b)))
+                                           (set! my-memory (filter (lambda (b) (not-equal? bindings b))
                                                                    my-memory))))))))))
 
 (define (node-f name)
