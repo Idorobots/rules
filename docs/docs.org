@@ -39,6 +39,8 @@ Mechanizm ów ma za zadanie ułatwić obsługę zdarzeń zachodzących w systemi
   (+ x y))
 #+END_SRC
 
+* Analiza problemu
+
 ** Zastosowanie proponowanego mechanizmu
 Mechanizm obsługi zdarzeń będzie docelowo wykorzystywany w zastosowaniach Internet of Things - środowisku rozproszonym z wysoką redundancją, gdzie wiele węzłów tworzących klaster udostępnia zbliżone funkcjonalności o nieco różnych charakterystykach.
 
@@ -128,27 +130,29 @@ Posiadając następujący moduł pobierający dane GPS z czujnika:
 #+LaTeX: \noindent
 ...system działający na dotychczasowym węźle automatycznie będzie wyświetlał dane z większą dokładnością.
 
+** Analiza możliwości implementacji i przydatności
 
-* Projekt
-- https://github.com/Idorobots/rules/
 
-** Analiza problemu
-- Opis zastosowania systemów regułowych w domenie problemu
-- Analiza możliwości i przydatności jego zastosowania
-- Analiza podobnych rozwiązań
+** Podobne rozwiązania
+- [[http://clipsrules.sourceforge.net/][CLIPS]]
+- [[http://www.drools.org/][Drools Fusion]]
+- [[http://blog.bosch-si.com/categories/technology/2012/04/new-video-rule-based-event-management-in-the-internet-of-things-and-services/][Bosh IoT Shenanigans]]
 
-** Szkic rozwiązania
-- Wybór algorytmów potrzebnych do implementacji
-- Porównanie różnych podejść
+
+* Szkic rozwiązania
+** Porównanie różnych podejść
+- Naiwne, iteracyjne algorytmy
 - http://herzberg.ca.sandia.gov/jess/docs/52/rete.html
 
-** Prototyp rozwiązania
-- Implementacja wybranych algorytmów
-- Przykłady zastosowania systemu regułowego
+** Wybór algorytmów potrzebnych do implementacji
+- Rete
 
-** Analiza proponowanego rozwiązania
-- Analiza wydajności i opłacalności proponowanego rozwiązania
-- Wnioski i raport końcowy
+* Prototyp rozwiązania
+** Implementacja wybranych algorytmów
+** Przykłady zastosowania systemu regułowego
+* Analiza proponowanego rozwiązania
+** Analiza wydajności i opłacalności proponowanego rozwiązania
+** Wnioski
 
 * Bibliografia
 - Charles L. Forgy, /Rete: A Fast Algorithm for the Many Pattern / Many Object Pattern Match Problem/, Artificial Intelligence 19 (1982), 17-37, http://dl.acm.org/citation.cfm?id=115736
