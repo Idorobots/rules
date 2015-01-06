@@ -131,13 +131,43 @@ Posiadając następujący moduł pobierający dane GPS z czujnika:
 ...system działający na dotychczasowym węźle automatycznie będzie wyświetlał dane z większą dokładnością.
 
 ** Analiza możliwości implementacji i przydatności
+Przydatność proponowanego mechanizmu jest potencjalnie nieoceniona w domenie języków programowania ponieważ umożliwia ekspresję złożonego przepływu sterowania w deklaratywny sposób - za pomocą krótkich, dobrze zdefiniowanych reguł. Dzięki temu programista tworzący aplikacje wykorzystując system regułowy może skoncentrować się na rezultatach rozwiązania problemu, nie zaś na sposobie ich osiągnięcia - system regułowy zrobi to za niego.
 
+Wykorzystanie systemów regułowych do implementacji systemu modułów języka programowania dodatkowo umożliwia automatyczne i skalowalne tworzenie rozproszonych, dynamicznych systmemów charakteryzujących się dużą redundancją - takich jak Internet of Things. Podejście regułowe zapewnia interfejs komunikacji i mechanizm rozwiązywania konflików między poszczególnymi modułami/jednostkami aplikacji, co ułatwia ich kompozycję i umożliwia redundancję.
+
+Dodatkowym atutem zastosowania systemów regułowych jest potencjalna skalowalność systemów z nich korzystających - do systemu w każdym momencie można dodać więcej węzłów dostarczających pewne usługi, a system automatycznie będzie w stanie z nich korzystać, reagować na zmiany ich stanu i obsługiwać zdarzenia przez nie sygnalizowane. Zwiększenie ilości węzłów dostarczających te same usługi pozytywnie wpływa także na stabilność i bezpieczeństwo działania systemu dzięki zwiększeniu jego redundancji.
+
+Potencjalne zalety wykorzystania systemów regułowych w systemach rozproszonych szczególnie dobrze widać w idealnym przypadku zaprezentowanym na poniższym diagramie, gdzie każdy węzeł zawiera pewne reguły i generuje zdarzenia przesyłane do pozostałych węzłów systemu:
+
+#+BEGIN_CENTER
+#+ATTR_LATEX: :width 0.5\textwidth
+[[file:./img/sdep.pdf]]
+#+END_CENTER
+
+#+LaTeX: \noindent
+Taka konfiguracja zapewnia wszystkie opisane powyżej zalety kosztem zasobów wymaganych do implementacji i działania systemów regułowych na każdym węźle.
+
+W przypadku Internet of Things mały rozmiar i oganiczona wydajność pamięciowa/obliczeniowa urządzeń wchodzących w jego skład niestety uniemożliwia stosowanie istniejących, profesjonalnych systemów regułowych w celu implementcji powyższej, idealnej konfiguracji prowadząc do następującego układu:
+
+#+BEGIN_CENTER
+#+ATTR_LATEX: :width 0.5\textwidth
+[[file:./img/adep.pdf]]
+#+END_CENTER
+
+#+LaTeX: \noindent
+W tej konfiguracji istnieją dwie klasy węzłów:
+
+- węzły regułowe, których oprogramowanie korzysta z systemów regułowych do obsługi zdarzeń,
+
+- węzły zdarzeniowe, które jedynie generują zdarzenia i przesyłają je do węzłów regułowych systemu.
+
+#+LaTeX: \noindent
+Ponieważ węzły zdarzeniowe nie umożliwiają definicji reguł, są one zdane na alternatywne, często imperatywne i mało skalowalne sposoby obsługi zdarzeń, istotnym jest więc by proponowany w następujących sekcjach mechanizm obsługi zdarzeń charakteryzował się możliwie niskim narzutem wydajnościowym.
 
 ** Podobne rozwiązania
+- [[http://blog.bosch-si.com/categories/technology/2012/04/new-video-rule-based-event-management-in-the-internet-of-things-and-services/][Bosh IoT Shenanigans]]
 - [[http://clipsrules.sourceforge.net/][CLIPS]]
 - [[http://www.drools.org/][Drools Fusion]]
-- [[http://blog.bosch-si.com/categories/technology/2012/04/new-video-rule-based-event-management-in-the-internet-of-things-and-services/][Bosh IoT Shenanigans]]
-
 
 * Szkic rozwiązania
 ** Porównanie różnych podejść
@@ -158,3 +188,5 @@ Posiadając następujący moduł pobierający dane GPS z czujnika:
 - Charles L. Forgy, /Rete: A Fast Algorithm for the Many Pattern / Many Object Pattern Match Problem/, Artificial Intelligence 19 (1982), 17-37, http://dl.acm.org/citation.cfm?id=115736
 
 - Hesam Samimi, Chris Deaton, Yoshiki Ohshima, Alessandro Warth, and Todd Millstein, /Call by Meaning/, In Proceedings of the 2014 ACM International Symposium on New Ideas, New Paradigms, and Reflections on Programming & Software (Onward! 2014), ACM, New York, NY, USA, 11-28, http://doi.acm.org/10.1145/2661136.2661152
+
+- [[https://www.youtube.com/watch?v=weh7nFEpWZs][Rule-based Event Management in the Internet of Things and Services]]
