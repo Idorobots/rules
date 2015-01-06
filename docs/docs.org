@@ -165,9 +165,21 @@ W tej konfiguracji istnieją dwie klasy węzłów:
 Ponieważ węzły zdarzeniowe nie umożliwiają definicji reguł, są one zdane na alternatywne, często imperatywne i mało skalowalne sposoby obsługi zdarzeń, istotnym jest więc by proponowany w następujących sekcjach mechanizm obsługi zdarzeń charakteryzował się możliwie niskim narzutem wydajnościowym.
 
 ** Podobne rozwiązania
-- [[http://blog.bosch-si.com/categories/technology/2012/04/new-video-rule-based-event-management-in-the-internet-of-things-and-services/][Bosh IoT Shenanigans]]
-- [[http://clipsrules.sourceforge.net/][CLIPS]]
-- [[http://www.drools.org/][Drools Fusion]]
+Systemy regułowe wykorzystywane są w wielu różnych dziedzinach, przede wszystkim w systemach ekspertowych do przechowywania i manipulowania wiedzy.
+
+Kluczowym przykładem jest system [[http://clipsrules.sourceforge.net/][CLIPS]], charakteryzujący się elastycznością - jest on narzędziem do budowy systemów ekspertowych umożliwiającym osadzenie go w gotowej aplikacji. Nie posiada on jednak wszystkich aspektów języka programowania ogólnego przeznaczenia, przez co jego wykorzystanie nie jest dogodne.
+
+Następnym przykładem wykorzystania systemów regułowych do obsługi zdarzeń jest pakiet [[http://www.drools.org/][Drools Fusion]], wykorzystujący reguły oraz arbitralny kod w języku Java w kontekście systemów reguł biznesowych (BRMS). Ponieważ jest to system /profesjonalny/ i skierowany do dużych korporacji, jest on bardzo rozległy i posiada bardzo wiele, niekoniecznie pożądanych funkcjonalności, przez co jego wykorzystanie w projekcie również nie jest dogodne.
+
+W domenie Internet of Things również powstają rozwiązania oparte o systemy regułowe. Przykładem jest [[http://blog.bosch-si.com/categories/technology/2012/04/new-video-rule-based-event-management-in-the-internet-of-things-and-services/][system]] zaproponowany przez firmę Bosh, który umożliwia zarządzanie inteligentnymi, podłączonymi do IoT urządzeniami z wykorzystaniem reguł. Niestety, jest to system komercyjny i scentralizowany, przez co traci on wiele z zalet zapewnianych przez systemy regułowe:
+
+#+BEGIN_CENTER
+#+ATTR_LATEX: :width 0.5\textwidth
+[[file:./img/bosh1.pdf]]
+#+END_CENTER
+
+#+LaTeX: \noindent
+Klienci mają jedynie możliwość pośredniej ingerencji w tzw. CCU, które są odpowiednikami węzłów regułowych opisanych powyżej. Reguły w CCU modyfikowane są przez zewnętrzny serwis operujący w /Chmurze/, od którego zależy cały budowany system.
 
 * Szkic rozwiązania
 ** Porównanie różnych podejść
