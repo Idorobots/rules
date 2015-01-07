@@ -41,7 +41,6 @@ Mechanizm ów ma za zadanie ułatwić obsługę zdarzeń zachodzących w systemi
 
 * Analiza problemu
 
-** Zastosowanie proponowanego mechanizmu
 Mechanizm obsługi zdarzeń będzie docelowo wykorzystywany w zastosowaniach Internet of Things - środowisku rozproszonym z wysoką redundancją, gdzie wiele węzłów tworzących klaster udostępnia zbliżone funkcjonalności o nieco różnych charakterystykach.
 
 Na potrzeby projektu, węzłem określana będzie instancja maszyny wirtualnej języka programowania, na której dostępne są *moduły* - zbiory funkcji realizujących jakąś funkcjonalność. Dynamicznie łączące i rozłączające się węzły będą generowały zdarzenia (indukowane przez i składające się z elementarnych operacji modyfikacji bazy faktów) takie jak: połączenie nowego węzła, pojawienie się nowego modułu, czy dowolne zmiany zawarte w kodzie przez porgramistę. Zdarzenia te będą przesyłane do pozostałych połączonych węzłów.
