@@ -181,12 +181,77 @@ W domenie Internet of Things również powstają rozwiązania oparte o systemy r
 Klienci mają jedynie możliwość pośredniej ingerencji w tzw. CCU, które są odpowiednikami węzłów regułowych opisanych powyżej. Reguły w CCU modyfikowane są przez zewnętrzny serwis operujący w /Chmurze/, od którego zależy cały budowany system.
 
 * Szkic rozwiązania
-** Porównanie różnych podejść
-- Naiwne, iteracyjne algorytmy
-- http://herzberg.ca.sandia.gov/jess/docs/52/rete.html
+W celu realizacji projektu niezbędne będzie zaimplementowanie dwóch struktur danych, *fact store* oraz *rule store*, które będą odpowiedzialne za przechowywanie odpowiednio faktów i reguł w systemie. Na poniższym diagramie przedstawiono obie struktury danych oraz ich interfejsy:
 
-** Wybór algorytmów potrzebnych do implementacji
-- Rete
+#+BEGIN_CENTER
+#+ATTR_LATEX: :width 0.5\textwidth
+[[file:./img/protocol.pdf]]
+#+END_CENTER
+
+*Fact store* umożliwia dodawanie nowych faktów przez =assert!= oraz usuwanie istniejących faktów przez =retract!=. Dodatkowo, możliwe jest sygnalizowanie zdarzeń poprzez =signal!=, które jest złożeniem =assert!= i =retract!=
+
+*Rule store* umożliwia definiowanie nowych reguł poprzez konstrukcję =whenever= oraz ich usuwanie przez =remove-rule!=. Dodatkowo, możliwe jest czasowe ograniczenie reguł wykorzystując inne konstrukcje języka oraz podstawowe operacje, jak =whenever= i =remove-rule!=.
+
+Powyższy protokół jest dostatecznie elastyczny, by umożliwić różne implementacje systemu regułowego i jednocześnie na tyle ekspresywny, by umożliwić w prosty sposób obsługę złożonych zdarzeń w systemie.
+
+** Porównanie różnych algorytmów
+Najłatwiejszą implementacją powyższego protokołu jest naiwne podejście iteracyjne polegające na iteracyjnym sprawdzaniu każdego faktu z każdą regułą. Rozwiązanie to, mimo że jest proste, jest również bardzo niewydajne - złożoność obliczeniowa rzędu =O(RF^P)=, dla =R= reguł, =F= faktów i =P= średniej ilości wzorców przypadających na lewą stronę reguły.
+
+Standardowym podejściem jest wykorzystanie algorytmu *Rete* - zaprojektowanego w roku 1974 przez dr Charls'a Forgy'iego, który charakteryzuje się znacznie lepszą złożonością obliczeniową - rzędu =O(RFP)= kosztem zwiększonego wykorzystania pamięci. Algorytm ten jest relatywnie nieskomplikowany i jednocześnie zadowalająco wydajny.
+
+Istnieją także wersje zrównoleglone algorytmu Rete, opisane szeroko w /Parallel Algorithms and Architectures for Rule-Based Systems/, jednak owe algorytmy są zbyt skomplikowane na potrzeby projektu.
+
+** Rete
+W związku z powyższym, zdecydowano się na implementacją podstawowej wersji algorytmu Rete. Algorytm Rete polega na budowie sieci reguł złożonej z węzłów należących do jednej z kilku kategorii przedstawionych na poniższym diagramie:
+
+#+BEGIN_CENTER
+#+ATTR_LATEX: :width 0.5\textwidth
+[[file:./img/nodes.pdf]]
+#+END_CENTER
+
+Węzły kategorii *node-1*, zwane także węzłami alfa, to proste węzły dopasowujące fakty do wzorców obecnych w regułach, np. =(provides ?x ?y)=. Posiadają one jedno wejście i potencjalnie wiele wyjść.
+
+Węzły kategorii *node-2*, zwane także węzłami beta, lub /join-nodes/ posiadają pamięć faktów i służą do unifikacji faktów pochodzących z dwóch wejść. Wynikiem ich działania jest szereg zunifikowanych faktów, pasujących do obu gałęzi sieci prowadzących do obecnego węzła.
+
+Węzły kategorii *node-a* to węzły akcji, które przechowują prawe strony reguł i posiadają tylko jedno wejście - wynik działania sieci Rete prowadzący do uruchomienia danej produkcji.
+
+Powyższe kategorie to tylko trzy podstawowe rodzaje węzłów, można wyróżnić jeszcze szereg innych przydatnych węzłów:
+
+- *node-p* - węzły zawierające predykaty, które umożliwiają nietrywialną filtrację faktów,
+- *node-r* - węzły redukcji, które przechowując stan wewnętrzny zezwalają na akumulację pewnego wyniku (np. minimalizację pewnej wartości obecnej w faktach).
+
+Algorytm transformuje produkcje reguł zamieniając ich lewe strony na kombinacje =node-1= i =node-2=, natomiast prawe strony na węzły kategorii =node-a=. Dla przykładu, poniższe reguły:
+
+#+BEGIN_SRC scheme
+;; Rule 1
+(whenever (and (a ?x module)
+                           (provides ?x ?y)
+                           (a ?y function))
+  (action1 ?x ?y))
+
+;; Rule 2
+(whenever (and (a ?x module)
+                           (provides ?x ?y))
+  (action2 ?x ?y))
+#+END_SRC
+
+#+LaTeX: \noindent
+...zostaną zamienione w wyniku działania algorytmu Rete na dwie rozłączne sieci zaprezentowane poniżej:
+
+#+BEGIN_CENTER
+#+ATTR_LATEX: :width 0.8\textwidth
+[[file:./img/naiverete.pdf]]
+#+END_CENTER
+
+#+LaTeX: \noindent
+...które następnie zostaną zredukowane w celu usunięcia węzłów redundantnych i optymalizacji ilości wykonywanych operacji do następującej sieci Rete:
+
+#+BEGIN_CENTER
+#+ATTR_LATEX: :width 0.5\textwidth
+[[file:./img/rete.pdf]]
+#+END_CENTER
+
+Ponieważ druga część algorytmu polegająca na redukcji sieci jest operacją relatywnie skomplikowaną, zdecydowano się w pierwszej kolejności zaimplementować /naiwną/ wersję algorytmu Rete, która nie optymalizuje struktury sieci. Jeśli czas pozwoli, redukcja sieci zostanie dodana w terminie późniejszym.
 
 * Prototyp rozwiązania
 ** Implementacja wybranych algorytmów
@@ -197,6 +262,8 @@ Klienci mają jedynie możliwość pośredniej ingerencji w tzw. CCU, które są
 
 * Bibliografia
 - Charles L. Forgy, /Rete: A Fast Algorithm for the Many Pattern / Many Object Pattern Match Problem/, Artificial Intelligence 19 (1982), 17-37, http://dl.acm.org/citation.cfm?id=115736
+
+- Anoop Gupta, Charles Forgy, Allen Newell, Robert Wedig, /Parallel Algorithms and Architectures for Rule-Based Systems/, SIGARCH Comput. Archit. News, May 1986, 28-37, http://dl.acm.org/citation.cfm?id=17360
 
 - Hesam Samimi, Chris Deaton, Yoshiki Ohshima, Alessandro Warth, and Todd Millstein, /Call by Meaning/, In Proceedings of the 2014 ACM International Symposium on New Ideas, New Paradigms, and Reflections on Programming & Software (Onward! 2014), ACM, New York, NY, USA, 11-28, http://doi.acm.org/10.1145/2661136.2661152
 
