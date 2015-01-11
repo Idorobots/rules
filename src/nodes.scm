@@ -71,7 +71,8 @@
 (define (node-1 pattern next-node)
   (node 'node-1
         (ref (list next-node))
-        pattern))
+        pattern
+        (ref null)))
 
 (define (node-2 next-node)
   (node 'node-2
@@ -149,11 +150,15 @@
                            (deref (next node))
                            fact))
     ('node-a ((data node 0) fact))
-    ('node-1 (let ((bindings (unify (data node 0) fact)))
-               (unless (null? bindings)
-                 (call-next assert
-                            (deref (next node))
-                            bindings))))
+    ('node-1 (let ((pattern (data node 0))
+                   (memory (data node 1)))
+               (unless (member fact (deref memory))
+                 (let ((bindings (unify pattern fact)))
+                   (unless (null? bindings)
+                     (assign! memory (cons fact (deref memory)))
+                     (call-next assert
+                                (deref (next node))
+                                bindings))))))
     ('node-2 (assert-node2 (next node)
                            fact
                            (data node 1)
@@ -184,11 +189,17 @@
                            (deref (next node))
                            fact))
     ;; FIXME Deduplicate
-    ('node-1 (let ((bindings (unify (data node 0) fact)))
-               (unless (null? bindings)
-                 (call-next retract
-                            (deref (next node))
-                            bindings))))
+    ('node-1 (let ((pattern (data node 0))
+                   (memory (data node 1)))
+               (when (member fact (deref memory))
+                 (let ((bindings (unify pattern fact)))
+                   (unless (null? bindings)
+                     (call-next retract
+                                (deref (next node))
+                                bindings)))
+                 (assign! memory
+                          (filter (partial not-equal? fact)
+                                  (deref memory))))))
     ('node-2 (retract-node2 (next node)
                             fact
                             (data node 1)
@@ -215,11 +226,12 @@
                            (deref (next node))
                            fact))
     ('node-a ((data node 0) fact))
-    ('node-1 (let ((bindings (unify (data node 0) fact)))
-               (unless (null? bindings)
-                 (call-next signal
-                            (deref (next node))
-                            bindings))))
+    ('node-1 (unless (member fact (deref (data node 1)))
+               (let ((bindings (unify (data node 0) fact)))
+                 (unless (null? bindings)
+                   (call-next signal
+                              (deref (next node))
+                              bindings)))))
     ('node-2 (signal-node2 (next node)
                            fact
                            (data node 1)
