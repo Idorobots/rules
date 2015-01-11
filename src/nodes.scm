@@ -89,12 +89,16 @@
 
 (define (unify pattern value)
   (cond ((variable? pattern) (list (cons pattern value)))
-        ((list? pattern) (let ((bindings (map unify pattern value)))
-                           (if (memf null? bindings)
-                               null
-                               (apply append
-                                      (filter pair?
-                                              bindings)))))
+        ((and (list? pattern)
+              (list? value)
+              (equal? (length pattern)
+                      (length value)))
+         (let ((bindings (map unify pattern value)))
+           (if (memf null? bindings)
+               null
+               (apply append
+                      (filter pair?
+                              bindings)))))
         ((equal? pattern value) #t) ;; NOTE Indicates that value matches pattern but doesn't bind anything.
         ('else null)))
 
@@ -269,5 +273,5 @@
 ;; Samples
 
 (define (dummy-network)
-  (compile '(and (a ?x module) (provides ?x ?y))
+  (compile '(and (module ?x) (provides ?x ?y))
            dummy))
