@@ -29,8 +29,8 @@
   (lambda args (not (apply f args))))
 
 (define not-member (complimentary member))
-
 (define not-equal? (complimentary equal?))
+(define not-false? (complimentary false?))
 
 (define (partial f . args)
   (lambda rest
@@ -132,8 +132,9 @@
 
 (define (unify-call binding memory f)
   (for-each f
-            (filter (partial merge binding)
-                    memory)))
+            (filter not-false?
+                    (map (partial merge binding)
+                         memory))))
 
 (define (assert-node2 nodes fact this-mem other-mem)
   (unless (member fact (deref this-mem))
