@@ -85,6 +85,13 @@
         null
         node-2))
 
+(define (node-r fun var acc next-node)
+  (node 'node-r
+        (ref (list next-node))
+        fun
+        var
+        (ref acc)))
+
 ;; Pattern matching & utilities:
 
 (define (unify pattern value)
@@ -164,6 +171,16 @@
                      (call-next assert
                                 (deref (next node))
                                 bindings))))))
+    ('node-r (let* ((var (data node 1))
+                    (val (assoc var fact)))
+               (when val
+                 (let* ((acc (data node 2))
+                        (r ((data node 0) (cdr val) (deref acc))))
+                   (unless (equal? r (deref acc))
+                     (assign! acc r)
+                     (call-next assert
+                                (deref (next node))
+                                (cons var r)))))))
     ('node-2 (assert-node2 (next node)
                            fact
                            (data node 1)
@@ -205,6 +222,16 @@
                  (assign! memory
                           (filter (partial not-equal? fact)
                                   (deref memory))))))
+    ('node-r (let* ((var (data node 1))
+                    (val (assoc var fact)))
+               (when val
+                 (let* ((acc (data node 2))
+                        (r ((data node 0) (cdr val) (deref acc))))
+                   (unless (equal? r (deref acc))
+                     ;; NOTE No need to retract anything.
+                     (call-next retract
+                                (deref (next node))
+                                (cons var r)))))))
     ('node-2 (retract-node2 (next node)
                             fact
                             (data node 1)
@@ -237,6 +264,17 @@
                    (call-next signal
                               (deref (next node))
                               bindings)))))
+    ('node-r (let* ((var (data node 1))
+                    (val (assoc var fact)))
+               (when val
+                 (let* ((acc (data node 2))
+                        (r ((data node 0) (cdr val) (deref acc))))
+                   (unless (equal? r (deref acc))
+                     ;; NOTE We need to store the new acc anyway.
+                     (assign! acc r)
+                     (call-next signal
+                                (deref (next node))
+                                (cons var r)))))))
     ('node-2 (signal-node2 (next node)
                            fact
                            (data node 1)
@@ -258,6 +296,21 @@
 (define (conjunction-b pattern)
   (caddr pattern))
 
+(define (reduction? pattern)
+  (and (pair? pattern) (tagged-list? 'reduce pattern)))
+
+(define (reduction-f pattern)
+  (car (list-ref pattern 1)))
+
+(define (reduction-var pattern)
+  (cadr (list-ref pattern 1)))
+
+(define (reduction-acc pattern)
+  (caddr (list-ref pattern 1)))
+
+(define (reduction-pattern pattern)
+  (list-ref pattern 2))
+
 (define (compile-pattern pattern next-node)
   (cond ((conjunction? pattern) (let* ((n2 (node-2 next-node))
                                        (n2l (node-2l n2)))
@@ -265,6 +318,11 @@
                                                            n2l)
                                           (compile-pattern (conjunction-b pattern)
                                                            n2))))
+        ((reduction? pattern) (compile-pattern (reduction-pattern pattern)
+                                               (node-r (reduction-f pattern)
+                                                       (reduction-var pattern)
+                                                       (reduction-acc pattern)
+                                                       next-node)))
         ('else (list (node-1 pattern next-node)))))
 
 (define (compile pattern action)
@@ -273,5 +331,8 @@
 ;; Samples
 
 (define (dummy-network)
-  (compile '(and (module ?x) (provides ?x ?y))
+  (compile `(reduce (,min ?t 0.001)
+                    (and (and (module ?x)
+                           (provides ?x ?y))
+                         (tolerance ?y ?t)))
            dummy))
