@@ -65,7 +65,6 @@
 
 (define (node-a action)
   (node 'node-a
-        null
         action))
 
 (define (node-1 pattern next-node)
@@ -82,7 +81,6 @@
 
 (define (node-2l node-2)
   (node 'node-2l
-        null
         node-2))
 
 (define (node-r fun var acc next-node)
@@ -157,39 +155,33 @@
                          (deref nodes)))))
 
 (define (assert node fact)
-  (case (type node)
-    ('root-node (call-next assert
-                           (deref (next node))
-                           fact))
-    ('node-a ((data node 0) fact))
-    ('node-1 (let ((pattern (data node 0))
-                   (memory (data node 1)))
-               (unless (member fact (deref memory))
-                 (let ((bindings (unify pattern fact)))
-                   (unless (null? bindings)
-                     (assign! memory (cons fact (deref memory)))
-                     (call-next assert
-                                (deref (next node))
-                                bindings))))))
-    ('node-r (let* ((var (data node 1))
-                    (val (assoc var fact)))
-               (when val
-                 (let* ((acc (data node 2))
-                        (r ((data node 0) (cdr val) (deref acc))))
-                   (unless (equal? r (deref acc))
-                     (assign! acc r)
-                     (call-next assert
-                                (deref (next node))
-                                (cons var r)))))))
-    ('node-2 (assert-node2 (next node)
-                           fact
-                           (data node 1)
-                           (data node 0)))
-    ('node-2l (let ((inner (data node 0)))
-                (assert-node2 (next inner)
-                              fact
-                              (data inner 0)
-                              (data inner 1))))))
+  (match node
+    (`(root-node ,next)
+     (call-next assert (deref next) fact))
+
+    (`(node-a ,action)
+     (action fact))
+
+    (`(node-1 ,next ,pattern ,memory)
+     (unless (member fact (deref memory))
+       (let ((bindings (unify pattern fact)))
+         (unless (null? bindings)
+           (assign! memory (cons fact (deref memory)))
+           (call-next assert (deref next) bindings)))))
+
+    (`(node-r ,next ,fun ,var ,acc)
+     (let ((val (assoc var fact)))
+       (when val
+         (let ((r (fun (cdr val) (deref acc))))
+           (unless (equal? r (deref acc))
+             (assign! acc r)
+             (call-next assert (deref next) (cons var r)))))))
+
+    (`(node-2 ,next ,l-mem ,r-mem)
+     (assert-node2 next fact r-mem l-mem))
+
+    (`(node-2l (node-2 ,next ,l-mem ,r-mem))
+     (assert-node2 next fact l-mem r-mem))))
 
 (define (retract-node2 nodes fact this-mem other-mem)
   (when (member fact (deref this-mem))
@@ -206,41 +198,34 @@
                      (deref this-mem)))))
 
 (define (retract node fact)
-  (case (type node)
-    ('root-node (call-next retract
-                           (deref (next node))
-                           fact))
-    ;; FIXME Deduplicate
-    ('node-1 (let ((pattern (data node 0))
-                   (memory (data node 1)))
-               (when (member fact (deref memory))
-                 (let ((bindings (unify pattern fact)))
-                   (unless (null? bindings)
-                     (call-next retract
-                                (deref (next node))
-                                bindings)))
-                 (assign! memory
-                          (filter (partial not-equal? fact)
-                                  (deref memory))))))
-    ('node-r (let* ((var (data node 1))
-                    (val (assoc var fact)))
-               (when val
-                 (let* ((acc (data node 2))
-                        (r ((data node 0) (cdr val) (deref acc))))
-                   (unless (equal? r (deref acc))
-                     ;; NOTE No need to retract anything.
-                     (call-next retract
-                                (deref (next node))
-                                (cons var r)))))))
-    ('node-2 (retract-node2 (next node)
-                            fact
-                            (data node 1)
-                            (data node 0)))
-    ('node-2l (let ((inner (data node 0)))
-                (retract-node2 (next inner)
-                               fact
-                               (data inner 0)
-                               (data inner 1))))))
+  (match node
+    (`(root-node ,next)
+     (call-next retract (deref next) fact))
+
+    (`(node-1 ,next ,pattern ,memory)
+     (when (member fact (deref memory))
+       (let ((bindings (unify pattern fact)))
+         (unless (null? bindings)
+           (call-next retract (deref next) bindings)))
+       (assign! memory
+                (filter (partial not-equal? fact)
+                        (deref memory)))))
+
+    (`(node-r ,next ,fun ,var ,acc)
+     (let ((val (assoc var fact)))
+       (when val
+         (let ((r (fun (cdr val) (deref acc))))
+           (unless (equal? r (deref acc))
+             ;; NOTE No need to retract anything but we still need to retract next node.
+             (call-next retract (deref next) (cons var r)))))))
+
+    (`(node-2 ,next ,l-mem ,r-mem)
+     (retract-node2 next fact r-mem l-mem))
+
+    (`(node-2l (node-2 ,next ,l-mem ,r-mem))
+     (retract-node2 next fact l-mem r-mem))
+
+    (_ null)))
 
 (define (signal-node2 nodes fact this-mem other-mem)
   (unless (member fact (deref this-mem))
@@ -253,37 +238,33 @@
 (define (signal node fact)
   ;; (assert node fact)
   ;; (retract node fact)
-  (case (type node)
-    ('root-node (call-next signal
-                           (deref (next node))
-                           fact))
-    ('node-a ((data node 0) fact))
-    ('node-1 (unless (member fact (deref (data node 1)))
-               (let ((bindings (unify (data node 0) fact)))
-                 (unless (null? bindings)
-                   (call-next signal
-                              (deref (next node))
-                              bindings)))))
-    ('node-r (let* ((var (data node 1))
-                    (val (assoc var fact)))
-               (when val
-                 (let* ((acc (data node 2))
-                        (r ((data node 0) (cdr val) (deref acc))))
-                   (unless (equal? r (deref acc))
-                     ;; NOTE We need to store the new acc anyway.
-                     (assign! acc r)
-                     (call-next signal
-                                (deref (next node))
-                                (cons var r)))))))
-    ('node-2 (signal-node2 (next node)
-                           fact
-                           (data node 1)
-                           (data node 0)))
-    ('node-2l (let ((inner (data node 0)))
-                (signal-node2 (next inner)
-                              fact
-                              (data inner 0)
-                              (data inner 1))))))
+  (match node
+    (`(root-node ,next)
+     (call-next signal (deref next) fact))
+
+    (`(node-a ,action)
+     (action fact))
+
+    (`(node-1 ,next ,pattern ,memory)
+     (unless (member fact (deref memory))
+       (let ((bindings (unify pattern fact)))
+         (unless (null? bindings)
+           (call-next signal (deref next) bindings)))))
+
+    (`(node-r ,next ,fun ,var ,acc)
+     (let ((val (assoc var fact)))
+       (when val
+         (let ((r (fun (cdr val) (deref acc))))
+           (unless (equal? r (deref acc))
+             ;; NOTE We need to store the new acc anyway.
+             (assign! acc r)
+             (call-next signal (deref next) (cons var r)))))))
+
+    (`(node-2 ,next ,l-mem ,r-mem)
+     (signal-node2 next fact r-mem l-mem))
+
+    (`(node-2l (node-2 ,next ,l-mem ,r-mem))
+     (signal-node2 next fact l-mem r-mem))))
 
 ;; Rule compilation
 
@@ -312,13 +293,14 @@
   (list-ref pattern 2))
 
 (define (compile-pattern pattern next-node)
-  (cond ((conjunction? pattern) (compile-conjunction pattern next-node))
-        ((reduction? pattern) (compile-pattern (reduction-pattern pattern)
-                                               (node-r (reduction-f pattern)
-                                                       (reduction-var pattern)
-                                                       (reduction-acc pattern)
-                                                       next-node)))
-        ('else (list (node-1 pattern next-node)))))
+  (match pattern
+    (`(and . ,_)
+     (compile-conjunction pattern next-node))
+
+    (`(reduce (,fun ,var ,acc) ,pattern)
+     (compile-pattern pattern (node-r fun var acc next-node)))
+
+    (_ (list (node-1 pattern next-node)))))
 
 (define (compile-conjunction conj next-node)
   ((foldl (lambda (pattern build-prev)
