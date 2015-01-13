@@ -244,7 +244,7 @@ Algorytm transformuje produkcje reguł zamieniając ich lewe strony na kombinacj
 #+END_CENTER
 
 #+LaTeX: \noindent
-...które następnie zostaną zredukowane w celu usunięcia węzłów redundantnych i optymalizacji ilości wykonywanych operacji do następującej sieci Rete:
+...które następnie zostaną zredukowane, w celu usunięcia węzłów redundantnych i optymalizacji ilości wykonywanych operacji, do następującej sieci Rete:
 
 #+BEGIN_CENTER
 #+ATTR_LATEX: :width 0.5\textwidth
