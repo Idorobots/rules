@@ -254,12 +254,11 @@ Algorytm transformuje produkcje reguł zamieniając ich lewe strony na kombinacj
 Ponieważ druga część algorytmu polegająca na redukcji sieci jest operacją relatywnie skomplikowaną, zdecydowano się w pierwszej kolejności zaimplementować /naiwną/ wersję algorytmu Rete, która nie optymalizuje struktury sieci. Jeśli czas pozwoli, redukcja sieci zostanie dodana w terminie późniejszym.
 
 * Prototyp rozwiązania
-** Implementacja wybranych algorytmów
 Implementacja opisanych w poprzedniej sekcji algorytmów została [[https://github.com/Idorobots/rules/][udostępniona w internecie]]. Zawiera ona definicje następujących węzłów:
 
 - =node-1= - węzły alfa,
 - =node-2= - węzły beta,
-- =node-2l= - lewostronne adaptery węzłów beta,
+- =node-2l= - lewostronne adaptery węzłów beta (ułatwiają one obsługę sieci),
 - =node-a= - wezły akcji,
 - =node-r= - węzły redukcji.
 
@@ -269,8 +268,9 @@ Implementacja umożliwia wykonywanie następujących operacji:
 - =retract!= - retrakcja faktu z bazy faktów,
 - =signal!= - sygnalizacja zdarzenia,
 - =whenever= - definicja reguły,
-- =remove-rule!= - logiczne usunięcie reguły.
+- =remove-rule!= - logiczne usunięcie reguły (fragment sieci Rete odpowiadający lewej stronie reguły pozostaje w sieci nawet po jej usunięciu).
 
+#+LaTeX: \noindent
 Dodatkowo, implementacja pozwala na parametryzowanie akcji w definicjach reguł, dzięki czemu możliwe jest wykorzystanie dopasowanych wartości w łatwy sposób:
 
 #+BEGIN_SRC scheme
@@ -278,25 +278,28 @@ Dodatkowo, implementacja pozwala na parametryzowanie akcji w definicjach reguł,
             variables => actions ...)
 #+END_SRC
 
-** Przykłady zastosowania systemu regułowego
+Obecnie, implementacja nie optymalizuje reprezentacji sieci Rete, jednak w przyszłości będzie możliwe łatwe tego zrealizowanie.
 
+** Przykłady zastosowania systemu regułowego
+System regułowy powstały w wyniku projektu pozwala między innymi uruchamiać następujące fragmenty kodu:
+
+# FIXME Fooking pygments messing up my source blocks...
 #+BEGIN_SRC scheme
   (define new-foo
     (whenever (provides ?m foo)
             () => (display "New foo!\n")))
 
-  (whenever (and (module ?m)
-                 (provides ?m gps))
+  (whenever (and (module ?m) (provides ?m gps))
             () => (display "New GPS!\n"))
 
   (whenever (reduce (min ?t 0.1)
-                    (and (module ?m)
-                         (provides ?m gps)
-                         (tolerance ?m gps ?t)))
+                                    (and (module ?m)
+                                         (provides ?m gps)
+                                         (tolerance ?m gps ?t)))
             (?t) =>
-            (display "Better GPS: ")
-            (display ?t)
-            (display "!\n"))
+              (display "Better GPS: ")
+              (display ?t)
+              (display "!\n"))
 
   (assert! (module A))
   (assert! (provides A foo)) ;; New foo!
@@ -319,6 +322,7 @@ Dodatkowo, implementacja pozwala na parametryzowanie akcji w definicjach reguł,
   (assert! (tolerance B gps 0.001))
   (assert! (tolerance A gps 0.0001)) ;; A doesn't provide gps.
 
+  ;; Rule removal:
   (remove-rule! new-foo)
 #+END_SRC
 
