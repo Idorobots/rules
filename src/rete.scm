@@ -1,254 +1,183 @@
-;; Utils:
-(define (atom? thing)
-  (or (symbol? thing) (number? thing)))
+;; Rete implementation.
 
-(define (variable? pattern)
-  (and (symbol? pattern) (starts-with? #\? pattern)))
-
-(define (starts-with? character symbol)
-  (equal? character (car (string->list (symbol->string symbol)))))
-
-(define (complimentary f)
-  (lambda args (not (apply f args))))
-
-(define not-member (complimentary member))
-
-(define not-equal? (complimentary equal?))
+(load "utils.scm")
+(load "nodes.scm")
+(load "patternmatch.scm")
+(load "compiler.scm")
 
 ;; State:
-(define *fact-store* null)
-(define *rules* null)
-(define *rete* null)
+
+(define *rete* (root-node null))
+
+;; Utils:
 
 (define (reset!)
-  (set! *fact-store* null)
-  (set! *rules* null)
-  (set! *rete* null))
+  (set! *rete* (root-node null)))
 
-;; Fact store handling:
-(define (add-facts! facts)
-  (set! *fact-store* (append *fact-store* facts))
-  (for-each (lambda (f) (*rete* 'assert f))
-            facts))
+(define (call-next f nodes value)
+  (for-each (lambda (n) (f n value)) nodes))
 
-(define (signal-facts! facts)
-  (for-each (lambda (f) (*rete* 'signal f))
-            facts))
+(define (unify-call binding memory f)
+  (for-each f
+            (filter not-false?
+                    (map (partial merge binding)
+                         memory))))
 
-(define (remove-facts! facts)
-  (set! *fact-store*
-        (filter (lambda (fact)
-                  (not-member fact facts))
-                *fact-store*))
-  (for-each (lambda (f) (*rete* 'retract f))
-            facts))
+;; Rete actions:
 
-;; Rule handling:
-(define (make-rule name pattern body)
-  (list name pattern body (node-f name)))
+(define (assert-fact! node fact)
+  (match node
+    (`(root-node ,next)
+     (call-next assert-fact! (deref next) fact))
 
-(define (rule-name rule)
-  (car rule))
+    (`(node-a ,action)
+     (action fact))
 
-(define (rule-pattern rule)
-  (cadr rule))
+    (`(node-1 ,next ,pattern ,memory)
+     (unless (member fact (deref memory))
+       (let ((bindings (unify pattern fact)))
+         (unless (null? bindings)
+           (assign! memory (cons fact (deref memory)))
+           (call-next assert-fact! (deref next) bindings)))))
 
-(define (rule-body rule)
-  (caddr rule))
+    (`(node-r ,next ,fun ,var ,acc)
+     (let ((val (assoc var fact)))
+       (when val
+         (let ((r (fun (cdr val) (deref acc))))
+           (unless (equal? r (deref acc))
+             (assign! acc r)
+             (call-next assert-fact! (deref next) (cons var r)))))))
 
-(define (rule-node rule)
-  (cadddr rule))
+    (`(node-2 ,next ,l-mem ,r-mem)
+     (assert-fact-node2! next fact r-mem l-mem))
 
-(define (add-rule! rule)
-  (set! *rules* (cons rule *rules*))
-  (extend-network! rule))
+    (`(node-2l (node-2 ,next ,l-mem ,r-mem))
+     (assert-fact-node2! next fact l-mem r-mem))))
 
-(define (remove-rule! rule)
-  (set! *rules*
-        (filter (lambda (r)
-                  (not-equal? (rule-name rule)
-                              (rule-name r)))
-                *rules*)))
+(define (assert-fact-node2! nodes fact this-mem other-mem)
+  (unless (member fact (deref this-mem))
+    (assign! this-mem (cons fact (deref this-mem)))
+    (unify-call fact
+                (deref other-mem)
+                (partial call-next
+                         assert-fact!
+                         (deref nodes)))))
 
-;; Rete network handling:
-(define (extend-network! rule)
-  (let ((network (compile-rule rule)))
-    (set! *rete* (merge-networks *rete* network))))
+(define (retract-fact! node fact)
+  (match node
+    (`(root-node ,next)
+     (call-next retract-fact! (deref next) fact))
 
-(define (merge-networks original new)
-  ;; TODO Actually merge the networks...
-  (if (null? original)
-      new
-      (lambda (action fact)
-        (original action fact)
-        (new action fact))))
+    (`(node-1 ,next ,pattern ,memory)
+     (when (member fact (deref memory))
+       (let ((bindings (unify pattern fact)))
+         (unless (null? bindings)
+           (call-next retract-fact! (deref next) bindings)))
+       (assign! memory
+                (filter (partial not-equal? fact)
+                        (deref memory)))))
 
-(define (compile-rule rule)
-  (let ((nodes (compile-pattern (rule-pattern rule)
-                                (rule-node rule))))
-    (lambda (action fact)
-      (map (lambda (node)
-             ;; NOTE Rete Network always starts with N Node1's.
-             (node action fact))
-           nodes))))
+    (`(node-r ,next ,fun ,var ,acc)
+     (let ((val (assoc var fact)))
+       (when val
+         (let ((r (fun (cdr val) (deref acc))))
+           (unless (equal? r (deref acc))
+             ;; NOTE No need to retract anything but we still need to retract next node.
+             (call-next retract-fact! (deref next) (cons var r)))))))
 
-(define (compile-pattern pattern next-node)
-  (cond ((conjunction? pattern) (let ((nn (node-2 next-node)))
-                                  ;; FIXME Allow more than two clauses here...
-                                  (append (compile-pattern (conjunction-a pattern)
-                                                           (car nn))
-                                          (compile-pattern (conjunction-b pattern)
-                                                           (cadr nn)))))
-        ;; TODO Actually implement disjunction and negation nodes...
-        ((disjunction? pattern) null)
-        ((negation? pattern) null)
-        ('else (list (node-1 pattern next-node)))))
+    (`(node-2 ,next ,l-mem ,r-mem)
+     (retract-fact-node2! next fact r-mem l-mem))
 
-(define (disjunction? pattern)
-  (and (pair? pattern) (equal? (car pattern) 'or)))
+    (`(node-2l (node-2 ,next ,l-mem ,r-mem))
+     (retract-fact-node2! next fact l-mem r-mem))
 
-(define (conjunction? pattern)
-  (and (pair? pattern) (equal? (car pattern) 'and)))
+    (_ null)))
 
-(define (conjunction-a pattern)
-  (cadr pattern))
+(define (retract-fact-node2! nodes fact this-mem other-mem)
+  (when (member fact (deref this-mem))
+    (unify-call fact
+                (deref other-mem)
+                (partial call-next
+                         retract-fact!
+                         (deref nodes)))
+    ;; FIXME Since two different rules can introduce the same bindings
+    ;; FIXME a global renaming scheme should be used or original facts
+    ;; FIXME should be stored.
+    (assign! this-mem
+             (filter (partial not-equal? fact)
+                     (deref this-mem)))))
 
-(define (conjunction-b pattern)
-  (caddr pattern))
+(define (signal-fact! node fact)
+  (match node
+    (`(root-node ,next)
+     (call-next signal-fact! (deref next) fact))
 
-(define (negation? pattern)
-  (and (pair? pattern) (equal? (car pattern) 'not)))
+    (`(node-a ,action)
+     (action fact))
 
-;; Rete node types:
-(define (node-1 pattern next-node)
-  (lambda (action fact)
-    (let ((binding (unify pattern fact)))
-      (unless (null? binding)
-          (next-node action binding)))))
+    (`(node-1 ,next ,pattern ,memory)
+     (unless (member fact (deref memory))
+       (let ((bindings (unify pattern fact)))
+         (unless (null? bindings)
+           (call-next signal-fact! (deref next) bindings)))))
 
-(define (node-2 next-node)
-  (let ((l-mem null) ;; FIXME Should make this persistent.
-        (r-mem null))
-    (list (node-function next-node l-mem r-mem)
-          (node-function next-node r-mem l-mem))))
+    (`(node-r ,next ,fun ,var ,acc)
+     (let ((val (assoc var fact)))
+       (when val
+         (let ((r (fun (cdr val) (deref acc))))
+           (unless (equal? r (deref acc))
+             ;; NOTE We need to store the new acc anyway.
+             (assign! acc r)
+             (call-next signal-fact! (deref next) (cons var r)))))))
 
-(define-syntax node-function
-  (syntax-rules ()
-    ((node-function next-node my-memory other-memory)
-     (lambda (action bindings)
-       (let ((try-unify (lambda (bindings memory)
-                          (map (lambda (b) (next-node action b))
-                               (filter (lambda (b) (merge bindings b))
-                                       memory)))))
-         (cond ((equal? action 'signal) (unless (member bindings my-memory)
-                                          (try-unify bindings other-memory)))
-               ((equal? action 'assert) (unless (member bindings my-memory)
-                                          (set! my-memory (cons bindings my-memory))
-                                          (try-unify bindings other-memory)))
-               ((equal? action 'retract) (when (member bindings my-memory)
-                                           (try-unify bindings other-memory)
-                                           ;; NOTE We need to remove bindings from the rest of the network.
-                                           (set! my-memory (filter (lambda (b) (not-equal? bindings b))
-                                                                   my-memory))))))))))
+    (`(node-2 ,next ,l-mem ,r-mem)
+     (signal-fact-node2! next fact r-mem l-mem))
 
-(define (node-f name)
-  (lambda (action bindings)
-    (let ((r (assoc name *rules*)))
-      (when r
-        (unless (equal? action 'retract)
-          ((rule-body r) bindings))))))
+    (`(node-2l (node-2 ,next ,l-mem ,r-mem))
+     (signal-fact-node2! next fact l-mem r-mem))))
 
-(define (merge as bs)
-  ;; NOTE O(max(len(as), len(bs)))
-  (let loop ((as (sort as binding<?))
-             (bs (sort bs binding<?))
-             (acc null)
-             (intersect? #f))
-    (cond ((or (null? as) (null? bs)) (if intersect?
-                                          (append acc as bs)
-                                          #f))
-          ((binding<? (car as) (car bs)) (loop (cdr as)
-                                               bs
-                                               (cons (car as) acc)
-                                               intersect?))
-          ((binding<? (car bs) (car as)) (loop as
-                                               (cdr bs)
-                                               (cons (car bs) acc)
-                                               intersect?))
-          ((equal? (car as) (car bs)) (loop (cdr as)
-                                            (cdr bs)
-                                            (cons (car as) acc)
-                                            #t))
-          ('else #f))))
+(define (signal-fact-node2! nodes fact this-mem other-mem)
+  (unless (member fact (deref this-mem))
+    (unify-call fact
+                (deref other-mem)
+                (partial call-next
+                         signal-fact!
+                         (deref nodes)))))
 
-(define (binding<? a b)
-  (string<? (symbol->string (car a))
-            (symbol->string (car b))))
+;; Network merging & optimization:
 
-(define (unify pattern value)
-  (cond ((variable? pattern) (list (cons pattern value)))
-        ((list? pattern) (let ((bindings (map unify pattern value)))
-                           (if (memf null? bindings)
-                               null
-                               (apply append
-                                      (filter pair?
-                                              bindings)))))
-        ((equal? pattern value) #t) ;; NOTE Indicates that value matches pattern but doesn't bind anything.
-        ('else null)))
+(define (merge-networks node-a node-b)
+  ;; FIXME Actually implement network merging...
+  (root-node (append (deref (next-nodes node-a))
+                     (deref (next-nodes node-b)))))
 
 ;; Syntax for convenience:
 (define-syntax assert!
   (syntax-rules ()
-    ((assert! . facts)
-     (add-facts! 'facts))))
+    ((assert! fact)
+     (assert-fact! *rete* 'fact))))
 
 (define-syntax signal!
   (syntax-rules ()
-    ((signal! . facts)
-     (signal-facts! 'facts))))
+    ((signal! fact)
+     (signal-fact! *rete* 'fact))))
 
 (define-syntax retract!
   (syntax-rules ()
-    ((retract! . facts)
-     (remove-facts! 'facts))))
+    ((retract! fact)
+     (retract-fact! *rete* 'fact))))
 
 (define-syntax whenever
-  (syntax-rules ()
-    ((whenever pattern action ...)
-     (let ((r (make-rule (gensym 'rule)
-                         'pattern
-                         (lambda bindings
-                           ;; FIXME actually make the bindings usable.
-                           action ...))))
-       (add-rule! r)
-       r))))
+  (syntax-rules (=>)
+    ((whenever pattern vars => action ...)
+     (set! *rete*
+           (merge-networks *rete*
+                           (compile-rule 'pattern
+                                         (lambda bindings
+                                           (apply (lambda vars action ...)
+                                                  (map (lambda (v)
+                                                         (let ((val (assoc v bindings)))
+                                                           (when val
+                                                             (cdr val))))
+                                                       'vars)))))))))
 
-;; TODO Add a way to remove rules from the network.
-
-;; Exmaple usage:
-(reset!)
-
-(whenever (provides ?x foo)
-          (display "new foo!\n"))
-
-(define gps-appears
-  (whenever (and (a ?x module) (provides ?x gps))
-            (display "new gps!\n")))
-
-(assert! (a A module))
-(assert! (provides A foo))
-(assert! (provides A bar))
-
-(assert! (a B module))
-(assert! (provides B foo))
-(assert! (provides B gps))
-
-(assert! (provides C gps))
-(assert! (a C module))
-
-(signal! (provides A gps))
-
-(retract! (a B module))
-(assert! (a B module))
-
-(remove-rule! gps-appears)
