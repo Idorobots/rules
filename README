@@ -1,0 +1,1 @@
+A basic implementation of the Rete algorithm with support for reduction nodes. Check src/examples.scm for usage examples.
