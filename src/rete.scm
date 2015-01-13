@@ -168,13 +168,16 @@
      (retract-fact! *rete* 'fact))))
 
 (define-syntax whenever
-  (syntax-rules ()
-    ((whenever pattern action ...)
-     (let ((r (make-rule (gensym 'rule)
-                         'pattern
-                         (lambda bindings
-                           ;; FIXME actually make the bindings usable.
-                           action ...))))
-       (add-rule! r)
-       r))))
+  (syntax-rules (=>)
+    ((whenever pattern vars => action ...)
+     (set! *rete*
+           (merge-networks *rete*
+                           (compile-rule 'pattern
+                                         (lambda bindings
+                                           (apply (lambda vars action ...)
+                                                  (map (lambda (v)
+                                                         (let ((val (assoc v bindings)))
+                                                           (when val
+                                                             (cdr val))))
+                                                       'vars)))))))))
 
