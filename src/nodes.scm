@@ -14,11 +14,6 @@
   (display args)
   (newline))
 
-(define (id x) x)
-
-(define (atom? thing)
-  (or (symbol? thing) (number? thing)))
-
 (define (variable? pattern)
   (and (symbol? pattern) (starts-with? #\? pattern)))
 
@@ -39,9 +34,6 @@
 (define (tagged-list? tag list)
   (and (list? list) (equal? (list-ref list 0) tag)))
 
-(define (fact? pattern)
-  (tagged-list? 'fact pattern))
-
 ;; (node-type next-nodes node-data ...)
 
 (define (node type next . data)
@@ -56,12 +48,10 @@
 (define (data node n)
   (list-ref node (+ 2 n)))
 
-;; Actual nodes:
+;;Nodes
 
 (define (root-node nodes)
   (node 'root-node (ref nodes)))
-
-(define node-a? (partial tagged-list? 'node-a))
 
 (define (node-a action)
   (node 'node-a
@@ -118,8 +108,8 @@
              (acc null)
              (intersect? #f))
     (cond ((or (null? as) (null? bs)) (if intersect?
-                                         (append acc as bs)
-                                         #f))
+                                          (append acc as bs)
+                                          #f))
           ((binding<? (car as) (car bs)) (loop (cdr as)
                                                bs
                                                (cons (car as) acc)
@@ -144,15 +134,6 @@
             (filter not-false?
                     (map (partial merge binding)
                          memory))))
-
-(define (assert-node2 nodes fact this-mem other-mem)
-  (unless (member fact (deref this-mem))
-    (assign! this-mem (cons fact (deref this-mem)))
-    (unify-call fact
-                (deref other-mem)
-                (partial call-next
-                         assert
-                         (deref nodes)))))
 
 (define (assert node fact)
   (match node
@@ -183,19 +164,14 @@
     (`(node-2l (node-2 ,next ,l-mem ,r-mem))
      (assert-node2 next fact l-mem r-mem))))
 
-(define (retract-node2 nodes fact this-mem other-mem)
-  (when (member fact (deref this-mem))
+(define (assert-node2 nodes fact this-mem other-mem)
+  (unless (member fact (deref this-mem))
+    (assign! this-mem (cons fact (deref this-mem)))
     (unify-call fact
                 (deref other-mem)
                 (partial call-next
-                         retract
-                         (deref nodes)))
-    ;; FIXME Since two different rules can introduce the same bindings
-    ;; FIXME a global renaming scheme should be used or original facts
-    ;; FIXME should be stored.
-    (assign! this-mem
-             (filter (partial not-equal? fact)
-                     (deref this-mem)))))
+                         assert
+                         (deref nodes)))))
 
 (define (retract node fact)
   (match node
@@ -227,17 +203,21 @@
 
     (_ null)))
 
-(define (signal-node2 nodes fact this-mem other-mem)
-  (unless (member fact (deref this-mem))
+(define (retract-node2 nodes fact this-mem other-mem)
+  (when (member fact (deref this-mem))
     (unify-call fact
                 (deref other-mem)
                 (partial call-next
-                         signal
-                         (deref nodes)))))
+                         retract
+                         (deref nodes)))
+    ;; FIXME Since two different rules can introduce the same bindings
+    ;; FIXME a global renaming scheme should be used or original facts
+    ;; FIXME should be stored.
+    (assign! this-mem
+             (filter (partial not-equal? fact)
+                     (deref this-mem)))))
 
 (define (signal node fact)
-  ;; (assert node fact)
-  ;; (retract node fact)
   (match node
     (`(root-node ,next)
      (call-next signal (deref next) fact))
@@ -266,31 +246,18 @@
     (`(node-2l (node-2 ,next ,l-mem ,r-mem))
      (signal-node2 next fact l-mem r-mem))))
 
+(define (signal-node2 nodes fact this-mem other-mem)
+  (unless (member fact (deref this-mem))
+    (unify-call fact
+                (deref other-mem)
+                (partial call-next
+                         signal
+                         (deref nodes)))))
+
 ;; Rule compilation
 
-(define (conjunction? pattern)
-  (and (pair? pattern) (equal? (car pattern) 'and)))
-
-(define (conjunction-first pattern)
-  (cadr pattern))
-
-(define (conjunction-rest pattern)
-  (cddr pattern))
-
-(define (reduction? pattern)
-  (and (pair? pattern) (tagged-list? 'reduce pattern)))
-
-(define (reduction-f pattern)
-  (car (list-ref pattern 1)))
-
-(define (reduction-var pattern)
-  (cadr (list-ref pattern 1)))
-
-(define (reduction-acc pattern)
-  (caddr (list-ref pattern 1)))
-
-(define (reduction-pattern pattern)
-  (list-ref pattern 2))
+(define (compile pattern action)
+  (root-node (compile-pattern pattern (node-a action))))
 
 (define (compile-pattern pattern next-node)
   (match pattern
@@ -313,8 +280,11 @@
           (conjunction-rest conj))
    next-node))
 
-(define (compile pattern action)
-  (root-node (compile-pattern pattern (node-a action))))
+(define (conjunction-first pattern)
+  (cadr pattern))
+
+(define (conjunction-rest pattern)
+  (cddr pattern))
 
 ;; Samples
 
