@@ -8,11 +8,13 @@
 ;; State:
 
 (define *rete* (root-node null))
+(define *rules* null)
 
 ;; Utils:
 
 (define (reset!)
-  (set! *rete* (root-node null)))
+  (set! *rete* (root-node null))
+  (set! *rules* null))
 
 (define (call-next f nodes value)
   (for-each (lambda (n) (f n value)) nodes))
@@ -23,6 +25,11 @@
                     (map (partial merge binding)
                          memory))))
 
+(define (apply-rule id . args)
+  (let ((rule (assoc id *rules*)))
+    (when rule
+      (apply (cdr rule) args))))
+
 ;; Rete actions:
 
 (define (assert-fact! node fact)
@@ -31,7 +38,7 @@
      (call-next assert-fact! (deref next) fact))
 
     (`(node-a ,action)
-     (action fact))
+     (apply-rule action fact))
 
     (`(node-1 ,next ,pattern ,memory)
      (unless (member fact (deref memory))
@@ -113,7 +120,7 @@
      (call-next signal-fact! (deref next) fact))
 
     (`(node-a ,action)
-     (action fact))
+     (apply-rule action fact))
 
     (`(node-1 ,next ,pattern ,memory)
      (unless (member fact (deref memory))
@@ -151,6 +158,18 @@
   (root-node (append (deref (next-nodes node-a))
                      (deref (next-nodes node-b)))))
 
+(define (add-rule! id node action)
+  (set! *rules*
+        (cons (cons id action) *rules*))
+  (set! *rete*
+        (merge-networks *rete* node)))
+
+(define (remove-rule! id)
+  (set! *rules*
+        (filter (lambda (r)
+                  (not-equal? (car r) id))
+                *rules*)))
+
 ;; Syntax for convenience:
 (define-syntax assert!
   (syntax-rules ()
@@ -170,14 +189,15 @@
 (define-syntax whenever
   (syntax-rules (=>)
     ((whenever pattern vars => action ...)
-     (set! *rete*
-           (merge-networks *rete*
-                           (compile-rule 'pattern
-                                         (lambda bindings
-                                           (apply (lambda vars action ...)
-                                                  (map (lambda (v)
-                                                         (let ((val (assoc v bindings)))
-                                                           (when val
-                                                             (cdr val))))
-                                                       'vars)))))))))
+     (let ((id (gensym 'rule)))
+       (add-rule! id
+                  (compile-rule 'pattern id)
+                  (lambda bindings
+                    (apply (lambda vars action ...)
+                           (map (lambda (v)
+                                  (let ((val (assoc v bindings)))
+                                    (when val
+                                      (cdr val))))
+                                'vars))))
+       id))))
 

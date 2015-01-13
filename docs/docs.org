@@ -255,7 +255,73 @@ Ponieważ druga część algorytmu polegająca na redukcji sieci jest operacją 
 
 * Prototyp rozwiązania
 ** Implementacja wybranych algorytmów
+Implementacja opisanych w poprzedniej sekcji algorytmów została [[https://github.com/Idorobots/rules/][udostępniona w internecie]]. Zawiera ona definicje następujących węzłów:
+
+- =node-1= - węzły alfa,
+- =node-2= - węzły beta,
+- =node-2l= - lewostronne adaptery węzłów beta,
+- =node-a= - wezły akcji,
+- =node-r= - węzły redukcji.
+
+Implementacja umożliwia wykonywanie następujących operacji:
+
+- =assert!= - asercja faktu do bazy faktów,
+- =retract!= - retrakcja faktu z bazy faktów,
+- =signal!= - sygnalizacja zdarzenia,
+- =whenever= - definicja reguły,
+- =remove-rule!= - logiczne usunięcie reguły.
+
+Dodatkowo, implementacja pozwala na parametryzowanie akcji w definicjach reguł, dzięki czemu możliwe jest wykorzystanie dopasowanych wartości w łatwy sposób:
+
+#+BEGIN_SRC scheme
+  (whenever pattern
+            variables => actions ...)
+#+END_SRC
+
 ** Przykłady zastosowania systemu regułowego
+
+#+BEGIN_SRC scheme
+  (define new-foo
+    (whenever (provides ?m foo)
+            () => (display "New foo!\n")))
+
+  (whenever (and (module ?m)
+                 (provides ?m gps))
+            () => (display "New GPS!\n"))
+
+  (whenever (reduce (min ?t 0.1)
+                    (and (module ?m)
+                         (provides ?m gps)
+                         (tolerance ?m gps ?t)))
+            (?t) =>
+            (display "Better GPS: ")
+            (display ?t)
+            (display "!\n"))
+
+  (assert! (module A))
+  (assert! (provides A foo)) ;; New foo!
+  (assert! (provides A bar))
+
+  (assert! (module B))
+  (assert! (provides B foo)) ;; New foo!
+  (assert! (provides B gps)) ;; New GPS!
+
+  (assert! (provides C gps))
+  (assert! (module C))       ;; New GPS!
+
+  ;; Event signaling:
+  (signal! (provides A gps))
+  (retract! (module B))
+  (assert! (module B))
+
+  ;; Reduction nodes:
+  (assert! (tolerance C gps 0.01))
+  (assert! (tolerance B gps 0.001))
+  (assert! (tolerance A gps 0.0001)) ;; A doesn't provide gps.
+
+  (remove-rule! new-foo)
+#+END_SRC
+
 * Analiza proponowanego rozwiązania
 ** Analiza wydajności i opłacalności proponowanego rozwiązania
 ** Wnioski

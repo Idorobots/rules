@@ -2,8 +2,9 @@
 
 (reset!)
 
-(whenever (provides ?m foo)
-          () => (display "New foo!\n"))
+(define new-foo
+  (whenever (provides ?m foo)
+            () => (display "New foo!\n")))
 
 (whenever (and (module ?m)
                (provides ?m gps))
@@ -37,3 +38,5 @@
 (assert! (tolerance C gps 0.01))
 (assert! (tolerance B gps 0.001))
 (assert! (tolerance A gps 0.0001))
+
+(remove-rule! new-foo)
