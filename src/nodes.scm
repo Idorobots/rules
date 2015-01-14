@@ -44,3 +44,9 @@
         fun
         var
         (ref acc)))
+
+(define (node-p fun vars next-node)
+  (node 'node-p
+        (ref (list next-node))
+        fun
+        vars))

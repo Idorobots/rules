@@ -15,8 +15,22 @@
                        (provides ?m gps)
                        (tolerance ?m gps ?t)))
           (?t) =>
-          (display "Better GPS: ")
+          (display "Best GPS: ")
           (display ?t)
+          (display "!\n"))
+
+(whenever (filter (<= ?t2 ?t1)
+                  (filter (not-equal? ?m1 ?m2)
+                          (filter ((lambda (g)
+                                     (equal? g 'gps))
+                                   ?gps)
+                                  (and (tolerance ?m1 ?gps ?t1)
+                                       (tolerance ?m2 ?gps ?t2)))))
+          (?t1 ?t2) =>
+          (display "Better GPS: ")
+          (display ?t1)
+          (display " vs. ")
+          (display ?t2)
           (display "!\n"))
 
 (assert! (module A))

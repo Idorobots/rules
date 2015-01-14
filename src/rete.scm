@@ -30,6 +30,11 @@
     (when rule
       (apply (cdr rule) args))))
 
+(define (maybe-cdr maybe-lst)
+  (if (pair? maybe-lst)
+      (cdr maybe-lst)
+      null))
+
 ;; Rete actions:
 
 (define (assert-fact! node fact)
@@ -54,6 +59,11 @@
            (unless (equal? r (deref acc))
              (assign! acc r)
              (call-next assert-fact! (deref next) (cons var r)))))))
+
+    (`(node-p ,next ,fun ,vars)
+     (when (apply fun (map (lambda (v) (maybe-cdr (assoc v fact)))
+                           vars))
+       (call-next assert-fact! (deref next) fact)))
 
     (`(node-2 ,next ,l-mem ,r-mem)
      (assert-fact-node2! next fact r-mem l-mem))
@@ -91,6 +101,11 @@
            (unless (equal? r (deref acc))
              ;; NOTE No need to retract anything but we still need to retract next node.
              (call-next retract-fact! (deref next) (cons var r)))))))
+
+    (`(node-p ,next ,fun ,vars)
+     (when (apply fun (map (lambda (v) (maybe-cdr (assoc v fact)))
+                           vars))
+       (call-next retract-fact! (deref next) fact)))
 
     (`(node-2 ,next ,l-mem ,r-mem)
      (retract-fact-node2! next fact r-mem l-mem))
@@ -136,6 +151,11 @@
              ;; NOTE We need to store the new acc anyway.
              (assign! acc r)
              (call-next signal-fact! (deref next) (cons var r)))))))
+
+    (`(node-p ,next ,fun ,vars)
+     (when (apply fun (map (lambda (v) (maybe-cdr (assoc v fact)))
+                           vars))
+       (call-next signal-fact! (deref next) fact)))
 
     (`(node-2 ,next ,l-mem ,r-mem)
      (signal-fact-node2! next fact r-mem l-mem))
