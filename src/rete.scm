@@ -58,7 +58,7 @@
          (let ((r (fun (cdr val) (deref acc))))
            (unless (equal? r (deref acc))
              (assign! acc r)
-             (call-next assert-fact! (deref next) (cons var r)))))))
+             (call-next assert-fact! (deref next) (list (cons var r))))))))
 
     (`(node-p ,next ,fun ,vars)
      (when (apply fun (map (lambda (v) (maybe-cdr (assoc v fact)))
@@ -100,7 +100,7 @@
          (let ((r (fun (cdr val) (deref acc))))
            (unless (equal? r (deref acc))
              ;; NOTE No need to retract anything but we still need to retract next node.
-             (call-next retract-fact! (deref next) (cons var r)))))))
+             (call-next retract-fact! (deref next) (list (cons var r))))))))
 
     (`(node-p ,next ,fun ,vars)
      (when (apply fun (map (lambda (v) (maybe-cdr (assoc v fact)))
@@ -150,7 +150,7 @@
            (unless (equal? r (deref acc))
              ;; NOTE We need to store the new acc anyway.
              (assign! acc r)
-             (call-next signal-fact! (deref next) (cons var r)))))))
+             (call-next signal-fact! (deref next) (list (cons var r))))))))
 
     (`(node-p ,next ,fun ,vars)
      (when (apply fun (map (lambda (v) (maybe-cdr (assoc v fact)))
@@ -212,7 +212,7 @@
      (let ((id (gensym 'rule)))
        (add-rule! id
                   (compile-rule 'pattern id)
-                  (lambda bindings
+                  (lambda (bindings)
                     (apply (lambda vars action ...)
                            (map (lambda (v)
                                   (let ((val (assoc v bindings)))
