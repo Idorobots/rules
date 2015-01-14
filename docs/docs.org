@@ -88,27 +88,27 @@ Posiadając następujący moduł pobierający dane GPS z czujnika:
 ...programista jest w stanie zadeklarować obsługę pojawienia się modułu pobierającego dane GPS z większą dokładnością:
 
 #+BEGIN_SRC scheme
-  (define-module gps-app
-    (import 'gps-default)
+(define-module gps-app
+  (import 'gps-default)
 
-    (define gps-location-function gps-default:get-location)
+  (define gps-location-function gps-default:get-location)
 
-    (whenever (and (module-loaded ?node ?module)
-                               (declares ?module ?function)
-                               (name ?function 'get-location)
-                               (tolerance ?function ?tol)
-                               (< ?tol 0.01))
-      (set! gps-location-function ?node:?module:?function)
-      (update-state))
+  (whenever (and (module-loaded ?node ?module)
+                 (declares ?module ?function)
+                 (name ?function 'get-location)
+                 (tolerance ?function ?tol)
+                 (< ?tol 0.01))
+            (set! gps-location-function ?node:?module:?function)
+            (update-state))
 
-    (define (use-gps-data)
-      (let ((curr-location (get-location-function)))
-        ;; Use gps function to do something.
-        ))
-
-    (define (update-state)
-      ;; Update apps state using latest gps data.
+  (define (use-gps-data)
+    (let ((curr-location (get-location-function)))
+      ;; Use gps function to do something.
       ))
+
+  (define (update-state)
+    ;; Update apps state using latest gps data.
+    ))
 #+END_SRC
 
 #+LaTeX: \noindent
@@ -225,14 +225,14 @@ Algorytm transformuje produkcje reguł zamieniając ich lewe strony na kombinacj
 #+BEGIN_SRC scheme
 ;; Rule 1
 (whenever (and (a ?x module)
-                           (provides ?x ?y)
-                           (a ?y function))
-  (action1 ?x ?y))
+               (provides ?x ?y)
+               (a ?y function))
+          (action1 ?x ?y))
 
 ;; Rule 2
 (whenever (and (a ?x module)
-                           (provides ?x ?y))
-  (action2 ?x ?y))
+               (provides ?x ?y))
+          (action2 ?x ?y))
 #+END_SRC
 
 #+LaTeX: \noindent
@@ -287,61 +287,7 @@ Reguły uruchamiane są sekwencyjnie, co może doprowadzić do zaistnienia niesk
 ** Przykłady zastosowania systemu regułowego
 System regułowy powstały w wyniku projektu pozwala między innymi uruchamiać następujące fragmenty kodu:
 
-# FIXME Fooking pygments messing up my source blocks...
-#+BEGIN_SRC scheme
-  (define new-foo
-    (whenever (provides ?m foo)
-            () => (display "New foo!\n")))
-
-  (whenever (and (module ?m) (provides ?m gps))
-            () => (display "New GPS!\n"))
-
-  (whenever (reduce (min ?t 0.1)
-                                    (and (module ?m)
-                                         (provides ?m gps)
-                                         (tolerance ?m gps ?t)))
-            (?t) =>
-              (display "Better GPS: ")
-              (display ?t)
-              (display "!\n"))
-
-
-  (whenever (filter (and (tolerance ?m1 ?gps ?t1)
-                                         (tolerance ?m2 ?gps ?t2))
-                    (<= ?t1 ?t2)
-                    (not-equal? ?m1 ?m2)
-                    ((lambda (g) (equal? g 'gps)) ?gps))
-            (?t1 ?t2) =>
-              (display "Better GPS: ")
-              (display ?t1)
-              (display " vs. ")
-              (display ?t2)
-              (display "!\n"))
-
-  (assert! (module A))
-  (assert! (provides A foo)) ;; New foo!
-  (assert! (provides A bar))
-
-  (assert! (module B))
-  (assert! (provides B foo)) ;; New foo!
-  (assert! (provides B gps)) ;; New GPS!
-
-  (assert! (provides C gps))
-  (assert! (module C))       ;; New GPS!
-
-  ;; Event signaling:
-  (signal! (provides A gps))
-  (retract! (module B))
-  (assert! (module B))
-
-  ;; Reduction nodes:
-  (assert! (tolerance C gps 0.01))
-  (assert! (tolerance B gps 0.001))
-  (assert! (tolerance A gps 0.0001)) ;; A doesn't provide gps.
-
-  ;; Rule removal:
-  (remove-rule! new-foo)
-#+END_SRC
+#+LaTeX: \inputminted[]{scheme}{../src/examples.scm}
 
 * Analiza proponowanego rozwiązania
 ** Analiza wydajności i opłacalności proponowanego rozwiązania

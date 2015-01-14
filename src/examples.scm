@@ -1,3 +1,5 @@
+;; This is an example usage of the Rete-based RBS.
+
 (load "rete.scm")
 
 (reset!)
@@ -33,23 +35,26 @@
           (display "!\n"))
 
 (assert! (module A))
-(assert! (provides A foo))
+(assert! (provides A foo)) ;; New foo!
 (assert! (provides A bar))
 
 (assert! (module B))
-(assert! (provides B foo))
-(assert! (provides B gps))
+(assert! (provides B foo)) ;; New foo!
+(assert! (provides B gps)) ;; New GPS!
 
 (assert! (provides C gps))
-(assert! (module C))
+(assert! (module C))       ;; New GPS!
 
-(signal! (provides A gps))
-
+;; Event signaling:
+(signal! (provides A gps)) ;; New GPS!
 (retract! (module B))
-(assert! (module B))
+(assert! (module B))       ;; New GPS!
 
+;; Reduction & filtration nodes:
 (assert! (tolerance C gps 0.01))
 (assert! (tolerance B gps 0.001))
-(assert! (tolerance A gps 0.0001))
+(assert! (tolerance A gps 0.0001)) ;; A doesn't provide GPS.
 
+;; Rule removal:
 (remove-rule! new-foo)
+(assert! (provides C foo))
