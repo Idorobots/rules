@@ -10,9 +10,9 @@
     (`(and . ,_)
      (compile-conjunction pattern next-node))
 
-    (`(reduce (,fun ,var ,acc) ,pattern)
+    (`(reduce ,var (,fun ,acc . ,vars) ,pattern)
      ;; FIXME Don't use eval.
-     (compile-pattern pattern (node-r (eval fun) var acc next-node)))
+     (compile-pattern pattern (node-r (eval fun) var acc vars next-node)))
 
     (`(filter ,pattern . ,filters)
      (compile-pattern pattern (compile-filter filters next-node)))

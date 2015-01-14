@@ -10,13 +10,14 @@
                (provides ?m gps))
           () => (display "New GPS!\n"))
 
-(whenever (reduce (min ?t 0.1)
+(whenever (reduce ?min-t
+                  (min 0.1 ?t)
                   (and (module ?m)
                        (provides ?m gps)
                        (tolerance ?m gps ?t)))
-          (?t) =>
+          (?min-t) =>
           (display "Best GPS: ")
-          (display ?t)
+          (display ?min-t)
           (display "!\n"))
 
 (whenever (filter (and (tolerance ?m1 ?gps ?t1)

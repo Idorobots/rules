@@ -38,13 +38,14 @@
   (node 'node-2l
         node-2))
 
-(define (node-r fun var acc next-node)
+(define (node-r fun var acc vars next-node)
   (node 'node-r
         (ref (list next-node))
         (lambda (fact acc)
-          (let ((val (assoc var fact)))
-            (when val
-              (fun (cdr val) acc))))
+          (let ((vals (map (lambda (v) (assoc v fact))
+                           vars)))
+            (unless (any? false? vals)
+              (apply fun acc (map cdr vals)))))
         var
         (ref acc)))
 

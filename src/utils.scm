@@ -28,3 +28,9 @@
 
 (define (tagged-list? tag list)
   (and (list? list) (equal? (list-ref list 0) tag)))
+
+(define (any? pred lst)
+  (if (empty? lst)
+      #f
+      (or (pred (car lst))
+          (any? pred (cdr lst)))))
