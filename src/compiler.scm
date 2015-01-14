@@ -14,9 +14,8 @@
      ;; FIXME Don't use eval.
      (compile-pattern pattern (node-r (eval fun) var acc next-node)))
 
-    ;; FIXME Don't use eval.
-    (`(filter (,fun . ,vars) ,pattern)
-     (compile-pattern pattern (node-p (eval fun) vars next-node)))
+    (`(filter ,pattern . ,filters)
+     (compile-pattern pattern (compile-filter filters next-node)))
 
     (_ (list (node-1 pattern next-node)))))
 
@@ -36,3 +35,12 @@
 
 (define (conjunction-rest pattern)
   (cddr pattern))
+
+(define (compile-filter filters next-node)
+  (match filters
+    (`()
+     next-node)
+
+    (`((,fun . ,vars) . ,rest)
+    ;; FIXME Don't use eval.
+     (node-p (eval fun) vars (compile-filter rest next-node)))))
