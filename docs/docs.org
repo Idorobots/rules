@@ -282,6 +282,8 @@ Dodatkowo, implementacja pozwala na parametryzowanie akcji w definicjach reguł,
 
 Obecnie, implementacja nie optymalizuje reprezentacji sieci Rete, jednak w przyszłości będzie możliwe łatwe tego zrealizowanie.
 
+Reguły uruchamiane są sekwencyjnie, co może doprowadzić do zaistnienia nieskończonych pętli w programach z nich korzystających, ponieważ implementacja nie buduje zbioru konfliktowego i agendy uruchamiania produkcji. Rozwiązaniem tego problemu może być dodanie obsługi agendy lub asynchroniczne przetwarzanie asercji i retrakcji faktów. W związku z przeznaczeniem projektu zdecydoano się na drugie rozwiązanie, którego implementacja wymaga integracji projektu z docelowym językiem programowania.
+
 ** Przykłady zastosowania systemu regułowego
 System regułowy powstały w wyniku projektu pozwala między innymi uruchamiać następujące fragmenty kodu:
 
