@@ -1,6 +1,9 @@
 ;; Rete-based & naïve implementation benchmark.
 
-(define (test bench-fun)
+(load "rete.scm")
+(load "naive.scm")
+
+(define (test bench-fun times)
   ;; NOTE Inject mutation counters...
   (let ((old-ref ref)
         (old-assign! assign!)
@@ -17,9 +20,13 @@
     (set! assign! (lambda args
                     (set! assignments (+ 1 assignments))
                     (apply old-assign! args)))
+    (define (do-test times)
+      (when (>= times 0)
+        (bench-fun)
+        (do-test (- times 1))))
     (collect-garbage)
     (let-values (((start) (current-memory-use))
-                 ((_ cpu real gc) (time-apply bench-fun null))
+                 ((_ cpu real gc) (time-apply do-test (list times)))
                  ((stop) (current-memory-use)))
       (list (cons 'cpu-time cpu)
             (cons 'real-time real)
@@ -29,17 +36,17 @@
             (cons 'derefs derefs)
             (cons 'assignments assignments)))))
 
-(define (test-naive)
+(define (test-naive times)
   (load "naive.scm")
-  (test common-bench))
+  (test common-bench times))
 
-(define (test-rete)
+(define (test-rete times)
   (load "rete.scm")
-  (test common-bench))
+  (test common-bench times))
 
-(define (benchmark)
-  (list (cons 'naive (test-naive))
-        (cons 'rete (test-rete))))
+(define (benchmark times)
+  (list (cons 'naive (test-naive times))
+        (cons 'rete (test-rete times))))
 
 ;; The large benchmark function:
 
