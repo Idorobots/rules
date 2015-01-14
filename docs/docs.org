@@ -259,9 +259,11 @@ Implementacja opisanych w poprzedniej sekcji algorytmów została [[https://gith
 - =node-1= - węzły alfa,
 - =node-2= - węzły beta,
 - =node-2l= - lewostronne adaptery węzłów beta (ułatwiają one obsługę sieci),
-- =node-a= - wezły akcji,
-- =node-r= - węzły redukcji.
+- =node-a= - węzły akcji,
+- =node-r= - węzły redukcji,
+- =node-p= - węzły filtracji.
 
+#+LaTeX: \noindent
 Implementacja umożliwia wykonywanie następujących operacji:
 
 - =assert!= - asercja faktu do bazy faktów,
@@ -299,6 +301,19 @@ System regułowy powstały w wyniku projektu pozwala między innymi uruchamiać 
             (?t) =>
               (display "Better GPS: ")
               (display ?t)
+              (display "!\n"))
+
+
+  (whenever (filter (and (tolerance ?m1 ?gps ?t1)
+                                         (tolerance ?m2 ?gps ?t2))
+                    (<= ?t1 ?t2)
+                    (not-equal? ?m1 ?m2)
+                    ((lambda (g) (equal? g 'gps)) ?gps))
+            (?t1 ?t2) =>
+              (display "Better GPS: ")
+              (display ?t1)
+              (display " vs. ")
+              (display ?t2)
               (display "!\n"))
 
   (assert! (module A))
