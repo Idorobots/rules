@@ -30,11 +30,6 @@
     (when rule
       (apply (cdr rule) args))))
 
-(define (maybe-cdr maybe-lst)
-  (if (pair? maybe-lst)
-      (cdr maybe-lst)
-      null))
-
 ;; Rete actions:
 
 (define (assert-fact! node fact)
@@ -53,16 +48,13 @@
            (call-next assert-fact! (deref next) bindings)))))
 
     (`(node-r ,next ,fun ,var ,acc)
-     (let ((val (assoc var fact)))
-       (when val
-         (let ((r (fun (cdr val) (deref acc))))
-           (unless (equal? r (deref acc))
-             (assign! acc r)
-             (call-next assert-fact! (deref next) (list (cons var r))))))))
+     (let ((r (fun fact (deref acc))))
+       (unless (equal? r (deref acc))
+         (assign! acc r)
+         (call-next assert-fact! (deref next) (list (cons var r))))))
 
-    (`(node-p ,next ,fun ,vars)
-     (when (apply fun (map (lambda (v) (maybe-cdr (assoc v fact)))
-                           vars))
+    (`(node-p ,next ,fun)
+     (when (fun fact)
        (call-next assert-fact! (deref next) fact)))
 
     (`(node-2 ,next ,l-mem ,r-mem)
@@ -95,16 +87,13 @@
                         (deref memory)))))
 
     (`(node-r ,next ,fun ,var ,acc)
-     (let ((val (assoc var fact)))
-       (when val
-         (let ((r (fun (cdr val) (deref acc))))
-           (unless (equal? r (deref acc))
-             ;; NOTE No need to retract anything but we still need to retract next node.
-             (call-next retract-fact! (deref next) (list (cons var r))))))))
+     (let ((r (fun fact (deref acc))))
+       (unless (equal? r (deref acc))
+         ;; NOTE No need to retract anything but we still need to check the next node.
+         (call-next retract-fact! (deref next) (list (cons var r))))))
 
-    (`(node-p ,next ,fun ,vars)
-     (when (apply fun (map (lambda (v) (maybe-cdr (assoc v fact)))
-                           vars))
+    (`(node-p ,next ,fun)
+     (when (fun fact)
        (call-next retract-fact! (deref next) fact)))
 
     (`(node-2 ,next ,l-mem ,r-mem)
@@ -144,17 +133,14 @@
            (call-next signal-fact! (deref next) bindings)))))
 
     (`(node-r ,next ,fun ,var ,acc)
-     (let ((val (assoc var fact)))
-       (when val
-         (let ((r (fun (cdr val) (deref acc))))
-           (unless (equal? r (deref acc))
-             ;; NOTE We need to store the new acc anyway.
-             (assign! acc r)
-             (call-next signal-fact! (deref next) (list (cons var r))))))))
+     (let ((r (fun fact (deref acc))))
+       (unless (equal? r (deref acc))
+         ;; NOTE We need to store the new acc anyway.
+         (assign! acc r)
+         (call-next signal-fact! (deref next) (list (cons var r))))))
 
-    (`(node-p ,next ,fun ,vars)
-     (when (apply fun (map (lambda (v) (maybe-cdr (assoc v fact)))
-                           vars))
+    (`(node-p ,next ,fun)
+     (when (fun fact)
        (call-next signal-fact! (deref next) fact)))
 
     (`(node-2 ,next ,l-mem ,r-mem)

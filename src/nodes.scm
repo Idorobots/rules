@@ -41,12 +41,21 @@
 (define (node-r fun var acc next-node)
   (node 'node-r
         (ref (list next-node))
-        fun
+        (lambda (fact acc)
+          (let ((val (assoc var fact)))
+            (when val
+              (fun (cdr val) acc))))
         var
         (ref acc)))
 
 (define (node-p fun vars next-node)
   (node 'node-p
         (ref (list next-node))
-        fun
-        vars))
+        (lambda (fact)
+          (apply fun
+                 (map (lambda (v)
+                        (let ((b (assoc v fact)))
+                          (if (pair? b)
+                              (cdr b)
+                              null)))
+                      vars)))))
