@@ -1,9 +1,34 @@
 ;; Rete-based & naïve implementation benchmark.
 
-(load "rete.scm")
-(load "naive.scm")
+(define (benchmark seed)
+  (let loop ((modules '(benchmark
+                        compiler
+                        examples
+                        naive
+                        nodes
+                        patternmatch
+                        rete
+                        utils))
+             (done null))
+    (random-seed seed)
+    (if (empty? modules)
+        null
+        (let* ((to-infere (cons (car modules) done))
+               (facts (infere-all (reverse to-infere))))
+          (cons (list (cons 'facts (length facts))
+                      (cons 'naive (test-naive facts))
+                      (cons 'rete (test-rete facts)))
+                (loop (cdr modules) to-infere))))))
 
-(define (test bench-fun times)
+(define (test-naive facts)
+  (load "naive.scm")
+  (test (eval (bench-function facts))))
+
+(define (test-rete facts)
+  (load "rete.scm")
+  (test (eval (bench-function facts))))
+
+(define (test bench-fun)
   ;; NOTE Inject mutation counters...
   (let ((old-ref ref)
         (old-assign! assign!)
@@ -20,13 +45,9 @@
     (set! assign! (lambda args
                     (set! assignments (+ 1 assignments))
                     (apply old-assign! args)))
-    (define (do-test times)
-      (when (>= times 0)
-        (bench-fun)
-        (do-test (- times 1))))
     (collect-garbage)
     (let-values (((start) (current-memory-use))
-                 ((_ cpu real gc) (time-apply do-test (list times)))
+                 ((_ cpu real gc) (time-apply bench-fun null))
                  ((stop) (current-memory-use)))
       (list (cons 'cpu-time cpu)
             (cons 'real-time real)
@@ -36,86 +57,78 @@
             (cons 'derefs derefs)
             (cons 'assignments assignments)))))
 
-(define (test-naive times)
-  (load "naive.scm")
-  (test common-bench times))
+;; Fact inference for the benchmark generator:
 
-(define (test-rete times)
-  (load "rete.scm")
-  (test common-bench times))
+(define (infere-all modules)
+  (let ((facts (apply append (map infere-module modules))))
+    (map (lambda (f)
+           (let ((th (random 100)))
+             (cond ((< th 40) `(signal! ,f))
+                   ((< th 75) `(assert! ,f))
+                   ('else `(retract! ,f)))))
+         facts)))
 
-(define (benchmark times)
-  (list (cons 'naive (test-naive times))
-        (cons 'rete (test-rete times))))
+(define (infere-module name)
+  (with-input-from-file (string-append (symbol->string name) ".scm")
+    (lambda ()
+      (cons `(module ,name)
+            (let loop ()
+              (let ((form (read)))
+                (if (eof-object? form)
+                    null
+                    (append (infere name form)
+                            (loop)))))))))
 
-;; The large benchmark function:
+(define (infere name form)
+  (match form
+    (`(define (,function . ,args) . ,body)
+     (list* `(provides ,name ,function)
+            (if (list? args)
+                `(arity ,name ,function ,(length args))
+                `(arity ,name ,function variable))
+            (map (lambda (arg)
+                   `(argument ,name ,function ,arg))
+                 (->list args))))
+    (`(define ,variable . ,value)
+     (list `(defines ,name ,variable)))
+    (otherwise null)))
 
-(define (common-bench)
-  ;; TODO Actually implement a meaningful benchmark.
-  (reset!)
+(define (->list improper-list)
+  (cond ((pair? improper-list) (cons (car improper-list)
+                                     (->list (cdr improper-list))))
+        ((null? improper-list) null)
+        ('else (list improper-list))))
 
-  (define new-foo
-    (whenever (provides ?m foo)
-              () => null))
+;; The benchmark function generator:
 
-  (whenever (and (module ?m)
-                 (provides ?m gps))
-            () => null)
-
-  (whenever (and (module ?m)
-                 (provides ?m ?f)
-                 (tolerange ?m ?f 0.01))
-            () => null)
-
-  (whenever (and (module ?m)
-                 (provides ?m ?f1)
-                 (provides ?m ?f2)
-                 (tolerange ?m ?f ?t)
-                 (tolerance ?m ?f ?t))
-            () => null)
-
-  (whenever (and (module ?m1)
-                 (module ?m2)
-                 (provides ?m1 ?f)
-                 (provides ?m2 ?f)
-                 (tolerange ?m1 ?f ?t)
-                 (tolerance ?m2 ?f ?t))
-            () => null)
-
-  (assert! (module A))
-  (assert! (provides A foo))
-  (assert! (provides A bar))
-  (assert! (provides A baz))
-  (signal! (provides A faz))
-
-  (assert! (module B))
-  (assert! (provides B foo))
-  (assert! (provides B gps))
-  (signal! (provides B bar))
-  (signal! (provides B baz))
-
-  (assert! (provides C foo))
-  (assert! (provides C bar))
-  (assert! (provides C baz))
-  (assert! (provides C faz))
-  (assert! (provides C gps))
-  (assert! (module C))
-
-  (signal! (provides A gps))
-  (retract! (module B))
-  (assert! (module B))
-
-  (assert! (tolerance C gps 0.01))
-  (assert! (tolerance B gps 0.001))
-  (assert! (tolerance A gps 0.0001))
-
-  (assert! (tolerance C foo 0.01))
-  (assert! (tolerance B foo 0.001))
-  (assert! (tolerance A foo 0.0001))
-
-  (assert! (tolerance C bar 0.01))
-  (assert! (tolerance B bar 0.001))
-  (assert! (tolerance A bar 0.0001))
-
-  (remove-rule! new-foo)
-  (assert! (provides C foo)))
+(define (bench-function facts)
+  `(lambda ()
+     (reset!)
+     ;; All providers of add-rule!
+     (whenever (provides ?m add-rule!)
+               () => null)
+     ;; All modules that provide add-rule!
+     (whenever (and (module ?m)
+                    (provides ?m add-rule!))
+               () => null)
+     ;; All modules that provide a 2-ary function.
+     (whenever (and (module ?m)
+                    (provides ?m ?f)
+                    (arity ?m ?f 2))
+               () => null)
+     ;; All function pairs in a module that have the same arity.
+     (whenever (and (module ?m)
+                    (provides ?m ?f1)
+                    (provides ?m ?f2)
+                    (arity ?m ?f1 ?a)
+                    (arity ?m ?f2 ?a))
+               () => null)
+     ;; All functions pairs in module pairs that have the same arity.
+     (whenever (and (module ?m1)
+                    (module ?m2)
+                    (provides ?m1 ?f)
+                    (provides ?m2 ?f)
+                    (arity ?m1 ?f ?a)
+                    (arity ?m2 ?f ?a))
+               () => null)
+     ,@facts))
