@@ -290,7 +290,82 @@ System regułowy powstały w wyniku projektu pozwala między innymi uruchamiać 
 #+LaTeX: \inputminted[]{scheme}{../src/examples.scm}
 
 * Analiza proponowanego rozwiązania
-** Analiza wydajności i opłacalności proponowanego rozwiązania
+Systemy regułowe stanowią dobry, relatywnie nieskomplikowany formalizm, na którym można oprzeć implementację mechanizmu obsługi zdarzeń. Zapewniają one wysoką ekspresywność i dobrze pasują do semantyki języków programowania do programowania rozproszonego bazujących na przetwarzaniu zdarzeń. Dodatkowo, znane są dostatecznie wydajne algorytmy, dzięki którym wykorzystanie takiego mechanizmu w środowisku /produkcyjnym/ jest realistyczne.
+
+** Analiza wydajności proponowanego rozwiązania
+Niniejsza sekcja zawiera analizę wydajności proponowanego mechanizmu obsługi zdarzeń bazującego na algorytmie Rete, którego teoretyczna złożoność obliczeniowa wynosi =O(RFP)= dla =F= faktów, =R= reguł oraz =P= wzorców przypadających średnio na regułę, z możliwością optymalizacji przez łączenie podobnych fragmentów sieci do =O(aRFP)=, gdzie =a= należy do przedziału (0, 1] i zależy od /podobieństwa/ podsieci.
+
+Niestety implementacja nie optymalizuje reprezentacji sieci, co uniemożliwiło osiągnięcie najlepszej złożoności obliczeniowej; w najgorszym przypadku, =R= identycznych reguł, z których każda definiuje =P= wzorców oraz =F= faktów, każda reguła musi unifikować przynajmniej =R= wzorców, co jest uruchamiane jednorazowo dla każdego z =F= faktów. Otrzymana złożoność obliczeniowa jest więc rzędu =O(RFP)=.
+
+Implementacja ta została porównana z /naiwną/ implementacją, która dla każdej z =R= reguł kombinatorycznie unifikuje =F= faktów w =P= wzorcach, skutkując złożonością obliczeniową rzędu =O(RF^P)=.
+
+Kod testujący wykorzystuje stałą liczbę *5* reguł o średniej liczbie *3.4* wzorców oraz zmienną liczbę faktów dodawanych/usuwanych/sygnalizowanych w bazie faktów inferowanych z implementacji poszczególnych modułów projektu, na których przeprowadzane są losowe operacje =signal!= (40%), =assert!= (35%) oraz =retract!= (25%):
+
+#+BEGIN_EXAMPLE
+(module benchmark)
+(provides benchmark benchmark)
+(arity benchmark benchmark 1)
+(argument benchmark benchmark seed)
+(provides benchmark test-naive)
+(arity benchmark test-naive 1)
+(argument benchmark test-naive facts)
+(provides benchmark test-rete)
+(arity benchmark test-rete 1)
+(argument benchmark test-rete facts)
+(provides benchmark test)
+(arity benchmark test 1)
+(argument benchmark test bench-fun)
+(provides benchmark infere-all)
+(arity benchmark infere-all 1)
+(argument benchmark infere-all modules)
+(provides benchmark infere-module)
+(arity benchmark infere-module 1)
+(argument benchmark infere-module name)
+(provides benchmark infere)
+(arity benchmark infere 2)
+...
+#+END_EXAMPLE
+
+#+LaTeX: \noindent
+Kod testujący zbiera różne statystyki z działania wybranej implementacji, takie jak czasy działania, przyrost zużycia pamięci, czy liczby mutacji różnych struktur danych wykorzystanych w implementacji.
+
+Ponieważ tylko czasy działania wykazywały istotne różnice, pozostałe statystyki zostały pominięte w niniejszej analizie. Otrzymane czasy działania w zależności od ilości inferowanych faktów zawarto w poniższej tabeli:
+
+#+ATTR_LATEX: :align |r|r|r|
+|---------+------------+-----------|
+| # Facts | Naïve [ms] | Rete [ms] |
+|---------+------------+-----------|
+|      29 |          4 |         3 |
+|      52 |          8 |         3 |
+|      54 |         26 |         3 |
+|      78 |        812 |         4 |
+|     122 |       3117 |         7 |
+|     135 |       6748 |        10 |
+|     196 |      35111 |        11 |
+|     233 |      93865 |        15 |
+|---------+------------+-----------|
+
+#+LaTeX: \noindent
+...oraz zaprezentowano na poniższym wykresie:
+
+#+BEGIN_CENTER
+#+ATTR_LATEX: :width 0.7\textwidth
+[[file:./img/benchmark.pdf]]
+#+END_CENTER
+
+Otrzymane wyniki jednoznacznie potwierdzają, iż implementacja bazująca na algorytmie Rete jest znacznie bardziej wydajna czasowo od naiwnej, wykładniczej implementacji i, przynajmniej dla małych próbek faktów, zachowuje liniową charakterystykę złożoności czasowej.
+
+Aby lepiej przeanalizować stworzoną implementację, ekstrapolowano pomiary wykorzystując większą próbkę danych otrzymaną przez zwielokrotnienie faktów inferowanych z kodu systemu regułowego. Niestety próbka ta zawiera wiele duplikatów, przez co nie oddaje wiernie rzeczywistych charakterystyk wykorzystania systemu. Wyniki zaprezentowano na poniższym wykresie:
+
+#+BEGIN_CENTER
+#+ATTR_LATEX: :width 0.7\textwidth
+[[file:./img/benchmark2.pdf]]
+#+END_CENTER
+
+Ekstrapolowane wyniki sugerują wykładniczy trend złożoności obliczeniowej implementacji w funkcji ilości faktów, co może wskazywać na pewne niedociągnięcia implementacji, lub zaistnienie pewnych czynników zewnętrznych, takich jak dodatkowe czasy zarządzania pamięcią.
+
+Jednoznaczne określenie praktycznej wydajności powstałego mechanizmu obsługi zdarzeń będzie wymagało dokładniejszych testów przeprowadzonych na specjalnie przygotowanych, realistycznych scenariuszach wykorzystania mechanizmu w praktyce.
+
 ** Wnioski
 
 * Bibliografia
