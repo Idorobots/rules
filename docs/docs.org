@@ -368,6 +368,12 @@ Jednoznaczne określenie praktycznej wydajności powstałego mechanizmu obsługi
 
 ** Wnioski
 
+- Algorytm Rete jest relatywnie nietrudny do zaimplementowania. Całość implementacji zajmuje zaledwie dwa razy więcej kodu niż niewydajne, naiwne rozwiązanie.
+
+- Wydajność algorytmu Rete jest zadowalająca nawet pomimo braku optymalizacji reprezentacji sieci. Dodatkowo, podczas testów wydajnościowych nie spotkano się z problemem nadmiernego zużycia pamięci podczas działania algorytmu.
+
+- Najważniejszym wnioskiem, jest fakt, iż systemy regułowe stanowią dobrą bazę do implementacji mechanizmów obsługi zdarzeń.
+
 * Bibliografia
 - Charles L. Forgy, /Rete: A Fast Algorithm for the Many Pattern / Many Object Pattern Match Problem/, Artificial Intelligence 19 (1982), 17-37, http://dl.acm.org/citation.cfm?id=115736
 
