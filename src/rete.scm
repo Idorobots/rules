@@ -7,14 +7,14 @@
 
 ;; State:
 
-(define *rete* (root-node null))
-(define *rules* null)
+(define *rete* (ref (root-node null)))
+(define *rules* (ref null))
 
 ;; Utils:
 
 (define (reset!)
-  (set! *rete* (root-node null))
-  (set! *rules* null))
+  (assign! *rete* (root-node null))
+  (assign! *rules* null))
 
 (define (call-next f nodes value)
   (for-each (lambda (n) (f n value)) nodes))
@@ -26,7 +26,7 @@
                          memory))))
 
 (define (apply-rule id . args)
-  (let ((rule (assoc id *rules*)))
+  (let ((rule (assoc id (deref *rules*))))
     (when rule
       (apply (cdr rule) args))))
 
@@ -165,32 +165,32 @@
                      (deref (next-nodes node-b)))))
 
 (define (add-rule! id node action)
-  (set! *rules*
-        (cons (cons id action) *rules*))
-  (set! *rete*
-        (merge-networks *rete* node)))
+  (assign! *rules*
+           (cons (cons id action) (deref *rules*)))
+  (assign! *rete*
+           (merge-networks (deref *rete*) node)))
 
 (define (remove-rule! id)
-  (set! *rules*
-        (filter (lambda (r)
-                  (not-equal? (car r) id))
-                *rules*)))
+  (assign! *rules*
+           (filter (lambda (r)
+                     (not-equal? (car r) id))
+                   (deref *rules*))))
 
 ;; Syntax for convenience:
 (define-syntax assert!
   (syntax-rules ()
     ((assert! fact)
-     (assert-fact! *rete* 'fact))))
+     (assert-fact! (deref *rete*) 'fact))))
 
 (define-syntax signal!
   (syntax-rules ()
     ((signal! fact)
-     (signal-fact! *rete* 'fact))))
+     (signal-fact! (deref *rete*) 'fact))))
 
 (define-syntax retract!
   (syntax-rules ()
     ((retract! fact)
-     (retract-fact! *rete* 'fact))))
+     (retract-fact! (deref *rete*) 'fact))))
 
 (define-syntax whenever
   (syntax-rules (=>)

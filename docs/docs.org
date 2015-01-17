@@ -39,6 +39,7 @@ Mechanizm ów ma za zadanie ułatwić obsługę zdarzeń zachodzących w systemi
   (+ x y))
 #+END_SRC
 
+#+latex: \pagebreak
 * Analiza problemu
 
 Mechanizm obsługi zdarzeń będzie docelowo wykorzystywany w zastosowaniach Internet of Things - środowisku rozproszonym z wysoką redundancją, gdzie wiele węzłów tworzących klaster udostępnia zbliżone funkcjonalności o nieco różnych charakterystykach.
@@ -49,7 +50,6 @@ Dzięki zastosowaniu systemu regułowego, moduły wchodzące w skład danego wę
 
 Wykorzystanie wnioskowania w przód umożliwi definiowanie reguł z wyprzedzeniem - powiązane z nimi instrukcje obsługujące zdarzenie zostaną wykonane dopiero w momencie spełnienia reguły, po dostatecznej modyfikacji bazy faktów.
 
-#+LaTeX: \pagebreak
 ** Przykład zastosowania proponowanego mechanizmu
 
 #+LaTeX: \noindent
@@ -139,7 +139,7 @@ Dodatkowym atutem zastosowania systemów regułowych jest potencjalna skalowalno
 Potencjalne zalety wykorzystania systemów regułowych w systemach rozproszonych szczególnie dobrze widać w idealnym przypadku zaprezentowanym na poniższym diagramie, gdzie każdy węzeł zawiera pewne reguły i generuje zdarzenia przesyłane do pozostałych węzłów systemu:
 
 #+BEGIN_CENTER
-#+ATTR_LATEX: :width 0.5\textwidth
+#+ATTR_LATEX: :width 0.4\textwidth
 [[file:./img/sdep.pdf]]
 #+END_CENTER
 
@@ -149,7 +149,7 @@ Taka konfiguracja zapewnia wszystkie opisane powyżej zalety kosztem zasobów wy
 W przypadku Internet of Things mały rozmiar i oganiczona wydajność pamięciowa/obliczeniowa urządzeń wchodzących w jego skład niestety uniemożliwia stosowanie istniejących, profesjonalnych systemów regułowych w celu implementcji powyższej, idealnej konfiguracji prowadząc do następującego układu:
 
 #+BEGIN_CENTER
-#+ATTR_LATEX: :width 0.5\textwidth
+#+ATTR_LATEX: :width 0.4\textwidth
 [[file:./img/adep.pdf]]
 #+END_CENTER
 
@@ -173,13 +173,14 @@ Następnym przykładem wykorzystania systemów regułowych do obsługi zdarzeń 
 W domenie Internet of Things również powstają rozwiązania oparte o systemy regułowe. Przykładem jest [[http://blog.bosch-si.com/categories/technology/2012/04/new-video-rule-based-event-management-in-the-internet-of-things-and-services/][system]] zaproponowany przez firmę Bosh, który umożliwia zarządzanie inteligentnymi, podłączonymi do IoT urządzeniami z wykorzystaniem reguł. Niestety, jest to system komercyjny i scentralizowany, przez co traci on wiele z zalet zapewnianych przez systemy regułowe:
 
 #+BEGIN_CENTER
-#+ATTR_LATEX: :width 0.5\textwidth
+#+ATTR_LATEX: :width 0.6\textwidth
 [[file:./img/bosh1.pdf]]
 #+END_CENTER
 
 #+LaTeX: \noindent
 Klienci mają jedynie możliwość pośredniej ingerencji w tzw. CCU, które są odpowiednikami węzłów regułowych opisanych powyżej. Reguły w CCU modyfikowane są przez zewnętrzny serwis operujący w /Chmurze/, od którego zależy cały budowany system.
 
+#+latex: \pagebreak
 * Szkic rozwiązania
 W celu realizacji projektu niezbędne będzie zaimplementowanie dwóch struktur danych, *fact store* oraz *rule store*, które będą odpowiedzialne za przechowywanie odpowiednio faktów i reguł w systemie. Na poniższym diagramie przedstawiono obie struktury danych oraz ich interfejsy:
 
@@ -253,6 +254,7 @@ Algorytm transformuje produkcje reguł zamieniając ich lewe strony na kombinacj
 
 Ponieważ druga część algorytmu polegająca na redukcji sieci jest operacją relatywnie skomplikowaną, zdecydowano się w pierwszej kolejności zaimplementować /naiwną/ wersję algorytmu Rete, która nie optymalizuje struktury sieci. Jeśli czas pozwoli, redukcja sieci zostanie dodana w terminie późniejszym.
 
+#+latex: \pagebreak
 * Prototyp rozwiązania
 Implementacja opisanych w poprzedniej sekcji algorytmów została [[https://github.com/Idorobots/rules/][udostępniona w internecie]]. Zawiera ona definicje następujących węzłów:
 
@@ -287,17 +289,110 @@ Reguły uruchamiane są sekwencyjnie, co może doprowadzić do zaistnienia niesk
 ** Przykłady zastosowania systemu regułowego
 System regułowy powstały w wyniku projektu pozwala między innymi uruchamiać następujące fragmenty kodu:
 
+#+LaTeX: { \footnotesize
 #+LaTeX: \inputminted[]{scheme}{../src/examples.scm}
+#+LaTeX: }
 
+#+latex: \pagebreak
 * Analiza proponowanego rozwiązania
-** Analiza wydajności i opłacalności proponowanego rozwiązania
+Systemy regułowe stanowią dobry, relatywnie nieskomplikowany formalizm, na którym można oprzeć implementację mechanizmu obsługi zdarzeń. Zapewniają one wysoką ekspresywność i dobrze pasują do semantyki języków programowania do programowania rozproszonego bazujących na przetwarzaniu zdarzeń. Dodatkowo, znane są dostatecznie wydajne algorytmy, dzięki którym wykorzystanie takiego mechanizmu w środowisku /produkcyjnym/ jest realistyczne.
+
+** Analiza wydajności proponowanego rozwiązania
+Niniejsza sekcja zawiera analizę wydajności proponowanego mechanizmu obsługi zdarzeń bazującego na algorytmie Rete, którego teoretyczna złożoność obliczeniowa wynosi =O(RFP)= dla =F= faktów, =R= reguł oraz =P= wzorców przypadających średnio na regułę, z możliwością optymalizacji przez łączenie podobnych fragmentów sieci do =O(aRFP)=, gdzie =a= należy do przedziału (0, 1] i zależy od /podobieństwa/ podsieci.
+
+Niestety implementacja nie optymalizuje reprezentacji sieci, co uniemożliwiło osiągnięcie najlepszej złożoności obliczeniowej; w najgorszym przypadku, =R= identycznych reguł, z których każda definiuje =P= wzorców oraz =F= faktów, każda reguła musi unifikować przynajmniej =R= wzorców, co jest uruchamiane jednorazowo dla każdego z =F= faktów. Otrzymana złożoność obliczeniowa jest więc rzędu =O(RFP)=.
+
+Dla porównania wykorzystano /naiwną/ implementację, która dla każdej z =R= reguł kombinatorycznie unifikuje =F= faktów =P= razy, skutkując złożonością obliczeniową rzędu =O(RF^P)=.
+
+Kod testujący wykorzystuje stałą liczbę *5* reguł o średniej liczbie *3.4* wzorców oraz zmienną liczbę faktów dodawanych/usuwanych/sygnalizowanych w bazie faktów inferowanych z implementacji poszczególnych modułów projektu, na których przeprowadzane są losowe operacje =signal!= (40%), =assert!= (35%) oraz =retract!= (25%):
+
+#+LaTeX: { \footnotesize
+#+BEGIN_EXAMPLE
+(module benchmark)
+(provides benchmark benchmark)
+(arity benchmark benchmark 1)
+(argument benchmark benchmark seed)
+(provides benchmark test-naive)
+(arity benchmark test-naive 1)
+(argument benchmark test-naive facts)
+(provides benchmark test-rete)
+(arity benchmark test-rete 1)
+(argument benchmark test-rete facts)
+(provides benchmark test)
+(arity benchmark test 1)
+(argument benchmark test bench-fun)
+(provides benchmark infere-all)
+(arity benchmark infere-all 1)
+(argument benchmark infere-all modules)
+(provides benchmark infere-module)
+(arity benchmark infere-module 1)
+(argument benchmark infere-module name)
+(provides benchmark infere)
+(arity benchmark infere 2)
+(argument benchmark infere name)
+(argument benchmark infere form)
+(provides benchmark ->list)
+(arity benchmark ->list 1)
+(argument benchmark ->list improper-list)
+(provides benchmark bench-function)
+(arity benchmark bench-function 1)
+(argument benchmark bench-function facts)
+#+END_EXAMPLE
+#+LaTeX: }
+
+#+LaTeX: \noindent
+Kod testujący zbiera różne statystyki z działania wybranej implementacji, takie jak czasy działania, przyrost zużycia pamięci, czy liczby mutacji różnych struktur danych wykorzystanych w implementacji.
+
+Ponieważ tylko czasy działania wykazywały istotne różnice, pozostałe statystyki zostały pominięte w niniejszej analizie. Otrzymane czasy działania w zależności od ilości inferowanych faktów zawarto w poniższej tabeli:
+
+#+ATTR_LATEX: :align |r|r|r|
+|---------+------------+-----------|
+| # Facts | Naïve [ms] | Rete [ms] |
+|---------+------------+-----------|
+|      29 |          4 |         3 |
+|      52 |          8 |         3 |
+|      54 |         26 |         3 |
+|      78 |        812 |         4 |
+|     122 |       3117 |         7 |
+|     135 |       6748 |        10 |
+|     196 |      35111 |        11 |
+|     233 |      93865 |        15 |
+|---------+------------+-----------|
+
+#+LaTeX: \noindent
+...oraz zaprezentowano na poniższym wykresie:
+
+#+BEGIN_CENTER
+#+ATTR_LATEX: :width 0.7\textwidth
+[[file:./img/benchmark.pdf]]
+#+END_CENTER
+
+Otrzymane wyniki jednoznacznie potwierdzają, iż implementacja bazująca na algorytmie Rete jest znacznie bardziej wydajna czasowo od naiwnej, wykładniczej implementacji i, przynajmniej dla małych próbek faktów, zachowuje liniową charakterystykę złożoności czasowej.
+
+Aby lepiej przeanalizować stworzoną implementację, ekstrapolowano pomiary wykorzystując większą próbkę danych otrzymaną przez zwielokrotnienie faktów inferowanych z kodu systemu regułowego. Niestety próbka ta zawiera wiele duplikatów, przez co nie oddaje wiernie rzeczywistych charakterystyk wykorzystania systemu. Wyniki zaprezentowano na poniższym wykresie:
+
+#+BEGIN_CENTER
+#+ATTR_LATEX: :width 0.7\textwidth
+[[file:./img/benchmark2.pdf]]
+#+END_CENTER
+
+Ekstrapolowane wyniki sugerują wykładniczy trend złożoności obliczeniowej implementacji w funkcji ilości faktów, co może wskazywać na pewne niedociągnięcia implementacji, lub zaistnienie pewnych czynników zewnętrznych, takich jak dodatkowe czasy zarządzania pamięcią.
+
+Jednoznaczne określenie praktycznej wydajności powstałego mechanizmu obsługi zdarzeń będzie wymagało dokładniejszych testów przeprowadzonych na specjalnie przygotowanych, realistycznych scenariuszach wykorzystania mechanizmu w praktyce.
+
 ** Wnioski
 
+- Algorytm Rete jest relatywnie nietrudny do zaimplementowania. Całość implementacji zajmuje zaledwie dwa razy więcej kodu niż niewydajne, naiwne rozwiązanie.
+
+- Wydajność algorytmu Rete jest zadowalająca nawet pomimo braku optymalizacji reprezentacji sieci. Dodatkowo, podczas testów wydajnościowych nie spotkano się z problemem nadmiernego zużycia pamięci podczas działania algorytmu.
+
+- Najważniejszym wnioskiem, jest fakt, iż systemy regułowe stanowią dobrą bazę do implementacji mechanizmów obsługi zdarzeń.
+
+
+#+latex: \pagebreak
 * Bibliografia
 - Charles L. Forgy, /Rete: A Fast Algorithm for the Many Pattern / Many Object Pattern Match Problem/, Artificial Intelligence 19 (1982), 17-37, http://dl.acm.org/citation.cfm?id=115736
 
 - Anoop Gupta, Charles Forgy, Allen Newell, Robert Wedig, /Parallel Algorithms and Architectures for Rule-Based Systems/, SIGARCH Comput. Archit. News, May 1986, 28-37, http://dl.acm.org/citation.cfm?id=17360
-
-- Hesam Samimi, Chris Deaton, Yoshiki Ohshima, Alessandro Warth, and Todd Millstein, /Call by Meaning/, In Proceedings of the 2014 ACM International Symposium on New Ideas, New Paradigms, and Reflections on Programming & Software (Onward! 2014), ACM, New York, NY, USA, 11-28, http://doi.acm.org/10.1145/2661136.2661152
 
 - [[https://www.youtube.com/watch?v=weh7nFEpWZs][Rule-based Event Management in the Internet of Things and Services]]

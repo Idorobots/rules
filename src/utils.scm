@@ -21,6 +21,7 @@
 (define not-member (complimentary member))
 (define not-equal? (complimentary equal?))
 (define not-false? (complimentary false?))
+(define not-void? (complimentary void?))
 
 (define (partial f . args)
   (lambda rest
