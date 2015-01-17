@@ -374,11 +374,11 @@ Jednoznaczne określenie praktycznej wydajności powstałego mechanizmu obsługi
 
 - Najważniejszym wnioskiem, jest fakt, iż systemy regułowe stanowią dobrą bazę do implementacji mechanizmów obsługi zdarzeń.
 
+
+#+latex: \pagebreak
 * Bibliografia
 - Charles L. Forgy, /Rete: A Fast Algorithm for the Many Pattern / Many Object Pattern Match Problem/, Artificial Intelligence 19 (1982), 17-37, http://dl.acm.org/citation.cfm?id=115736
 
 - Anoop Gupta, Charles Forgy, Allen Newell, Robert Wedig, /Parallel Algorithms and Architectures for Rule-Based Systems/, SIGARCH Comput. Archit. News, May 1986, 28-37, http://dl.acm.org/citation.cfm?id=17360
-
-- Hesam Samimi, Chris Deaton, Yoshiki Ohshima, Alessandro Warth, and Todd Millstein, /Call by Meaning/, In Proceedings of the 2014 ACM International Symposium on New Ideas, New Paradigms, and Reflections on Programming & Software (Onward! 2014), ACM, New York, NY, USA, 11-28, http://doi.acm.org/10.1145/2661136.2661152
 
 - [[https://www.youtube.com/watch?v=weh7nFEpWZs][Rule-based Event Management in the Internet of Things and Services]]
