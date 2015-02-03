@@ -1,6 +1,7 @@
 ;; This is an example usage of the Rete-based RBS.
 
 (load "rete.scm")
+(load "backwardchaining.scm")
 
 (reset!)
 
@@ -58,3 +59,10 @@
 ;; Rule removal:
 (remove-rule! new-foo)
 (assert! (provides C foo))
+
+;; Backward chaining:
+(select (?f) ?f) ;; All facts.
+
+(select (?m ?f)  ;; All module-function pairs.
+        (and (module ?m)
+             (provides ?m ?f)))

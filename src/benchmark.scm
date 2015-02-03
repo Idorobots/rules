@@ -1,9 +1,11 @@
 ;; Rete-based & naïve implementation benchmark.
 
 (define (benchmark seed)
-  (let loop ((modules '(benchmark
+  (let loop ((modules '(backwardchaining
+                        benchmark
                         compiler
                         examples
+                        factstore
                         naive
                         nodes
                         patternmatch
