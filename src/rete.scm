@@ -28,9 +28,11 @@
                          memory))))
 
 (define (apply-rule id . args)
-  (let ((rule (assoc id (deref *rules*))))
-    (when rule
-      (apply (cdr rule) args))))
+  (if (procedure? id)
+      (apply id args)
+      (let ((rule (assoc id (deref *rules*))))
+        (when rule
+          (apply (cdr rule) args)))))
 
 ;; Rete actions:
 
