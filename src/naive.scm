@@ -3,14 +3,14 @@
 
 (load "utils.scm")
 (load "patternmatch.scm")
+(load "factstore.scm")
 
 ;; State:
 
-(define *facts* (ref null))
 (define *rules* (ref null))
 
 (define (reset!)
-  (assign! *facts* null)
+  (reset-facts!)
   (assign! *rules* null))
 
 ;; RBS actions:
@@ -58,24 +58,22 @@
 (define-syntax assert!
   (syntax-rules ()
     ((assert! fact)
-     (unless (member 'fact (deref *facts*))
-       (assign! *facts* (cons 'fact (deref *facts*)))
+     (unless (fact-asserted? 'fact)
+       (add-fact! 'fact)
        (run-rules (deref *rules*)
-                  (deref *facts*))))))
+                  (list-facts))))))
 
 (define-syntax retract!
   (syntax-rules ()
     ((retract! fact)
-     (assign! *facts*
-              (filter (partial not-equal? 'fact)
-                      (deref *facts*))))))
+     (remove-fact! 'fact))))
 
 (define-syntax signal!
   (syntax-rules ()
     ((signal! fact)
      (run-rules (deref *rules*)
                 (cons 'fact
-                      (deref *facts*))))))
+                      (list-facts))))))
 
 (define-syntax whenever
   (syntax-rules (=>)
