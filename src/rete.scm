@@ -4,6 +4,7 @@
 (load "nodes.scm")
 (load "patternmatch.scm")
 (load "compiler.scm")
+(load "factstore.scm")
 
 ;; State:
 
@@ -13,6 +14,7 @@
 ;; Utils:
 
 (define (reset!)
+  (reset-facts!)
   (assign! *rete* (root-node null))
   (assign! *rules* null))
 
@@ -26,9 +28,11 @@
                          memory))))
 
 (define (apply-rule id . args)
-  (let ((rule (assoc id (deref *rules*))))
-    (when rule
-      (apply (cdr rule) args))))
+  (if (procedure? id)
+      (apply id args)
+      (let ((rule (assoc id (deref *rules*))))
+        (when rule
+          (apply (cdr rule) args)))))
 
 ;; Rete actions:
 
@@ -180,7 +184,8 @@
 (define-syntax assert!
   (syntax-rules ()
     ((assert! fact)
-     (assert-fact! (deref *rete*) 'fact))))
+     (begin (add-fact! 'fact)
+            (assert-fact! (deref *rete*) 'fact)))))
 
 (define-syntax signal!
   (syntax-rules ()
@@ -190,7 +195,8 @@
 (define-syntax retract!
   (syntax-rules ()
     ((retract! fact)
-     (retract-fact! (deref *rete*) 'fact))))
+     (begin (remove-fact! 'fact)
+            (retract-fact! (deref *rete*) 'fact)))))
 
 (define-syntax whenever
   (syntax-rules (=>)

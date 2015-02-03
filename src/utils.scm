@@ -1,5 +1,7 @@
 ;; Various utilities.
 
+(define (id x) x)
+
 (define (ref x)
   (make-vector 1 x))
 
