@@ -17,6 +17,9 @@
         null
         (let* ((to-infere (cons (car modules) done))
                (facts (infere-all (reverse to-infere))))
+          (display "Running on ")
+          (display (length facts))
+          (display " facts\n")
           (cons (list (cons 'facts (length facts))
                       (cons 'naive (test-naive facts))
                       (cons 'rete (test-rete facts)))
@@ -62,13 +65,15 @@
 ;; Fact inference for the benchmark generator:
 
 (define (infere-all modules)
-  (let ((facts (apply append (map infere-module modules))))
-    (map (lambda (f)
+  (map (lambda (f)
            (let ((th (random 100)))
              (cond ((< th 40) `(signal! ,f))
                    ((< th 75) `(assert! ,f))
                    ('else `(retract! ,f)))))
-         facts)))
+         (infere-modules modules)))
+
+(define (infere-modules names)
+  (apply append (map infere-module names)))
 
 (define (infere-module name)
   (with-input-from-file (string-append (symbol->string name) ".scm")
@@ -83,8 +88,17 @@
 
 (define (infere name form)
   (match form
+    (`(define-syntax ,macro)
+     (list `(provides ,name ,macro)
+           `(macro ,name ,macro)))
+    (`(load ,file)
+     (list `(requires ,name
+                      ,(string->symbol (substring file
+                                                  0
+                                                  (- (string-length file) 4))))))
     (`(define (,function . ,args) . ,body)
      (list* `(provides ,name ,function)
+            `(function ,name ,function)
             (if (list? args)
                 `(arity ,name ,function ,(length args))
                 `(arity ,name ,function variable))
