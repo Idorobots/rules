@@ -84,7 +84,7 @@
 (assert! ((id . 3) (level . info)  (msg . "Core ok.")))
 
 ;; Get all debug logs.
-(map cdar
+(map car
      (select (?log)
              (filter ?log
                      ((lambda (log)
@@ -95,7 +95,7 @@
 (filter (lambda (log)
           (equal? (cdr (assoc 'level log))
                   'debug))
-        (map cdar (select (?log) ?log)))
+        (map car (select (?log) ?log)))
 
 ;; Get all logs related to a critical failure.
 (define (combine-logs acc id attrs)
@@ -103,9 +103,8 @@
       acc
       (cons `((id ,id) ,@attrs) acc)))
 
-(map cdr
-     (car (select (?logs)
-                  (reduce ?logs
-                          (combine-logs () ?id ?attrs)
-                          (and ((id . ?id) (level . error) . ?rest)
-                               ((id . ?id) . ?attrs))))))
+(caar (select (?logs)
+              (reduce ?logs
+                      (combine-logs () ?id ?attrs)
+                      (and ((id . ?id) (level . error) . ?rest)
+                           ((id . ?id) . ?attrs)))))

@@ -12,7 +12,8 @@
                                 (lambda (bindings)
                                   (assign! store
                                            (cons (map (lambda (v)
-                                                        (assoc v bindings))
+                                                        (let ((b (assoc v bindings)))
+                                                          (when b (cdr b))))
                                                       'variables)
                                                  (deref store)))))))
        (map-facts (lambda (fact)
