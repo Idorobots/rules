@@ -29,6 +29,8 @@
   (lambda rest
     (apply f (append args rest))))
 
+(define true? (partial equal? #t))
+
 (define (tagged-list? tag list)
   (and (list? list) (equal? (list-ref list 0) tag)))
 

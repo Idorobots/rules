@@ -2,18 +2,17 @@
 
 (load "utils.scm")
 
+;; FIXME Needs better unification.
 (define (unify pattern value)
   (cond ((variable? pattern) (list (cons pattern value)))
-        ((and (list? pattern)
-              (list? value)
-              (equal? (length pattern)
-                      (length value)))
-         (let ((bindings (map unify pattern value)))
-           (if (memf null? bindings)
-               null
-               (apply append
-                      (filter pair?
-                              bindings)))))
+        ((and (pair? pattern) (pair? value))
+         (let ((first (unify (car pattern) (car value)))
+               (rest (unify (cdr pattern) (cdr value))))
+           (cond ((null? first) null)
+                 ((null? rest) null)
+                 ((true? first) rest)
+                 ((true? rest) first)
+                 ('else (append first rest)))))
         ((equal? pattern value) #t) ;; NOTE Indicates that value matches pattern but doesn't bind anything.
         ('else null)))
 
