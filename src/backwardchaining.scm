@@ -17,4 +17,4 @@
                                                  (deref store)))))))
        (map-facts (lambda (fact)
                     (assert-fact! rule fact)))
-       store))))
+       (deref store)))))
