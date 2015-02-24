@@ -2,6 +2,33 @@
 
 (define (id x) x)
 
+(define (array size)
+  (make-vector size '()))
+
+(define (array-ref array index)
+  (vector-ref array index))
+
+(define (array-assign! array index value)
+  (vector-set! array index value))
+
+(define (slice array start end)
+  (reverse (let loop ((index start)
+                      (acc '()))
+             (if (= index end)
+                 acc
+                 (loop (+ 1 index) (cons (array-ref array index) acc))))))
+
+(define (partition array size start mid end)
+  (let ((pre (if (< start mid)
+                 (slice array start mid)
+                 (append (slice array start size)
+                         (slice array 0 mid))))
+        (past (if (< (+ 1 mid) end)
+                  (slice array (+ 1 mid) end)
+                  (append (slice array (+ mid 1) size)
+                          (slice array 0 end)))))
+    (list pre (array-ref array mid) past)))
+
 (define (ref x)
   (make-vector 1 x))
 
