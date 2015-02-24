@@ -23,11 +23,11 @@
           (display ?min-t)
           (display "!\n"))
 
-(whenever (filter (and (tolerance ?m1 ?gps ?t1)
-                       (tolerance ?m2 ?gps ?t2))
+(whenever (filter (let ((?gps (constantly 'gps)))
+                    (and (tolerance ?m1 ?gps ?t1)
+                         (tolerance ?m2 ?gps ?t2)))
                   (<= ?t1 ?t2)
-                  (not-equal? ?m1 ?m2)
-                  ((lambda (g) (equal? g 'gps)) ?gps))
+                  (not-equal? ?m1 ?m2))
           (?t1 ?t2) =>
           (display "Better GPS: ")
           (display ?t1)

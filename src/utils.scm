@@ -71,3 +71,7 @@
   (cond ((< value 0) (wrap (+ max value) max))
         ((>= value max) (wrap (- value max) max))
         ('else value)))
+
+(define (constantly value)
+  (lambda ignored
+    value))

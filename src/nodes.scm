@@ -22,6 +22,12 @@
   (node 'node-a
         action))
 
+(define (node-g var generator next-node)
+  (node 'node-g
+        (ref (list next-node))
+        (lambda ()
+          (list (cons var (generator))))))
+
 (define (node-1 pattern next-node)
   (node 'node-1
         (ref (list next-node))
