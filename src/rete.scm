@@ -61,6 +61,11 @@
      (when (fun fact)
        (call-next assert-fact! (deref next) fact)))
 
+    (`(node-t ,next ,fun)
+     (fun fact
+          (lambda (result)
+            (call-next assert-fact! (deref next) result))))
+
     (`(node-2 ,next ,l-mem ,r-mem)
      (assert-fact-node2! next fact r-mem l-mem))
 
@@ -99,6 +104,11 @@
     (`(node-p ,next ,fun)
      (when (fun fact)
        (call-next retract-fact! (deref next) fact)))
+
+    (`(node-t ,next ,fun)
+     (fun fact
+          (lambda (result)
+            (call-next retract-fact! (deref next) result))))
 
     (`(node-2 ,next ,l-mem ,r-mem)
      (retract-fact-node2! next fact r-mem l-mem))
@@ -146,6 +156,11 @@
     (`(node-p ,next ,fun)
      (when (fun fact)
        (call-next signal-fact! (deref next) fact)))
+
+    (`(node-t ,next ,fun)
+     (fun fact
+          (lambda (result)
+            (call-next signal-fact! (deref next) result))))
 
     (`(node-2 ,next ,l-mem ,r-mem)
      (signal-fact-node2! next fact r-mem l-mem))

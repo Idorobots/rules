@@ -17,6 +17,10 @@
     (`(filter ,pattern . ,filters)
      (compile-pattern pattern (compile-filter filters next-node)))
 
+    (`(trigger (,var ,buffer-size) ,pattern (,fun . ,vars))
+     ;; FIXME Don't use eval.
+     (compile-pattern pattern (node-t var buffer-size (eval fun) vars next-node)))
+
     (_ (list (node-1 pattern next-node)))))
 
 (define (compile-conjunction conj next-node)

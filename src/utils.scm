@@ -66,3 +66,8 @@
       #f
       (or (pred (car lst))
           (any? pred (cdr lst)))))
+
+(define (wrap value max)
+  (cond ((< value 0) (wrap (+ max value) max))
+        ((>= value max) (wrap (- value max) max))
+        ('else value)))
