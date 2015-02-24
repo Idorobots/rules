@@ -67,6 +67,28 @@
         (and (module ?m)
              (provides ?m ?f)))
 
+;; Trigger nodes for extended analysis of incomming events:
+(reset!)
+
+(whenever (trigger (?t 7)
+                   (temperature ?t)
+                   ((lambda (t) (>= t 25)) ?t))
+          (?t) =>
+          (display "Captured temp: ")
+          (display ?t)
+          (newline))
+
+(signal! (temperature 20))
+(signal! (temperature 21))
+(signal! (temperature 23))
+(signal! (temperature 24))
+(signal! (temperature 25)) ;; Triggered!
+(signal! (temperature 26))
+(signal! (temperature 24))
+(signal! (temperature 23)) ;; Captured some events!
+(signal! (temperature 21))
+(signal! (temperature 20))
+
 ;; Relational log minning!
 (reset!)
 
