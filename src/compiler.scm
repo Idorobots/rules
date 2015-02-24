@@ -12,14 +12,14 @@
 
     (`(reduce ,var (,fun ,acc . ,vars) ,pattern)
      ;; FIXME Don't use eval.
-     (compile-pattern pattern (node-r (eval fun) var acc vars next-node)))
+     (compile-pattern pattern (node-r (eval fun) var acc (eval-non-vars vars) next-node)))
 
     (`(filter ,pattern . ,filters)
      (compile-pattern pattern (compile-filter filters next-node)))
 
     (`(trigger (,var ,buffer-size) ,pattern (,fun . ,vars))
      ;; FIXME Don't use eval.
-     (compile-pattern pattern (node-t var buffer-size (eval fun) vars next-node)))
+     (compile-pattern pattern (node-t var buffer-size (eval fun) (eval-non-vars vars) next-node)))
 
     (`(define ,var ,fun)
      ;; FIXME Don't use eval.
@@ -31,6 +31,14 @@
                       next-node))
 
     (_ (list (node-1 pattern next-node)))))
+
+(define (eval-non-vars vars)
+  ;; FIXME This shouldn't even exist.
+  (map (lambda (v)
+         (if (variable? v)
+             v
+             (eval v)))
+       vars))
 
 (define (compile-conjunction conj next-node)
   ((foldl (lambda (pattern build-prev)
@@ -56,4 +64,4 @@
 
     (`((,fun . ,vars) . ,rest)
      ;; FIXME Don't use eval.
-     (node-p (eval fun) vars (compile-filter rest next-node)))))
+     (node-p (eval fun) (eval-non-vars vars) (compile-filter rest next-node)))))

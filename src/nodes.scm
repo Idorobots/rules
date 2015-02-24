@@ -58,10 +58,12 @@
 (define (var-apply fun vars alist)
   (apply fun
          (map (lambda (v)
-                (let ((b (assoc v alist)))
-                  (if (pair? b)
-                      (cdr b)
-                      null)))
+                (if (variable? v)
+                    (let ((b (assoc v alist)))
+                      (if (pair? b)
+                          (cdr b)
+                          null))
+                    v))
               vars)))
 
 (define (node-p fun vars next-node)

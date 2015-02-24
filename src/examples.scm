@@ -72,7 +72,7 @@
 
 (whenever (trigger (?t 7)
                    (temperature ?t)
-                   ((lambda (t) (>= t 25)) ?t))
+                   (>= ?t 25))
           (?t) =>
           (display "Captured temp: ")
           (display ?t)
