@@ -61,11 +61,11 @@
 (assert! (provides C foo))
 
 ;; Backward chaining:
-(select (?f) ?f) ;; All facts.
+(display (select (?f) ?f)) ;; All facts.
 
-(select (?m ?f)  ;; All module-function pairs.
-        (and (module ?m)
-             (provides ?m ?f)))
+(display (select (?m ?f)  ;; All module-function pairs.
+                 (and (module ?m)
+                      (provides ?m ?f))))
 
 ;; Trigger nodes for extended analysis of incomming events:
 (reset!)
@@ -106,18 +106,18 @@
 (assert! ((id . 3) (level . info)  (msg . "Core ok.")))
 
 ;; Get all debug logs.
-(map car
-     (select (?log)
-             (filter ?log
-                     ((lambda (log)
-                        (equal? (cdr (assoc 'level log))
-                                'debug))
-                      ?log))))
+(display (map car
+              (select (?log)
+                      (filter ?log
+                              ((lambda (log)
+                                 (equal? (cdr (assoc 'level log))
+                                         'debug))
+                               ?log)))))
 
-(filter (lambda (log)
-          (equal? (cdr (assoc 'level log))
-                  'debug))
-        (map car (select (?log) ?log)))
+(display (filter (lambda (log)
+                   (equal? (cdr (assoc 'level log))
+                           'debug))
+                 (map car (select (?log) ?log))))
 
 ;; Get all logs related to a critical failure.
 (define (combine-logs acc id attrs)
@@ -125,8 +125,8 @@
       acc
       (cons `((id ,id) ,@attrs) acc)))
 
-(caar (select (?logs)
-              (reduce ?logs
-                      (combine-logs () ?id ?attrs)
-                      (and ((id . ?id) (level . error) . ?rest)
-                           ((id . ?id) . ?attrs)))))
+(display (caar (select (?logs)
+                       (reduce ?logs
+                               (combine-logs () ?id ?attrs)
+                               (and ((id . ?id) (level . error) . ?rest)
+                                    ((id . ?id) . ?attrs))))))
