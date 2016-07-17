@@ -23,10 +23,13 @@
     (cond ((equal? a b) (list b))
           ((false? a) (list b))
           ('else (let ((bs (cons b bindings))
-                       (u (unify (cdr b) (cdr a))))
-                   (cond ((null? u) null)
-                         ((true? u) (list b))
-                         ('else (consistent? (car u) bs))))))))
+                       (us (unify (cdr a) (cdr b))))
+                   (cond ((null? us) null)
+                         ((true? us) (list b))
+                         ('else (apply append
+                                       (map (lambda (u)
+                                              (consistent? u bs))
+                                            us)))))))))
 
 (define (merge as bs)
   (cond ((null? as) bs)

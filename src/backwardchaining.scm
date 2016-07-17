@@ -10,14 +10,17 @@
      (let* ((store (ref null))
             (rule (compile-rule 'pattern
                                 (lambda (bindings)
-                                  (define (get v)
-                                    (let ((b (assoc v bindings)))
-                                      (cond ((false? b) #f)
-                                            ((variable? (cdr b)) (or (get (cdr b))
-                                                                     (cdr b)))
-                                            ('else (cdr b)))))
+                                  (define (unfold v)
+                                    (cond ((variable? v) (let ((a (assoc v bindings)))
+                                                           (if a
+                                                               (unfold (cdr a))
+                                                               v))) ;; NOTE Most specific type is a free variable.
+                                          ((list? v) (map unfold v))
+                                          ((pair? v) (cons (unfold (car v))
+                                                           (unfold (cdr v))))
+                                          ('else v))) ;; NOTE Most specific type is a concrete value.
                                   (assign! store
-                                           (cons (map get 'variables)
+                                           (cons (map unfold 'variables)
                                                  (deref store)))))))
        (map-facts (lambda (fact)
                     (assert-fact! rule fact)))

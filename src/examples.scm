@@ -144,12 +144,16 @@
 (assert! (: * (-> (int int) int)))
 (assert! (: if (-> (bool ?t ?t) ?t)))
 
-;; (: fact (-> ?arg ?ret))
-(display (car (select (?arg ?ret)
-                      (and (: = (-> (?arg int) ?eq))            ;; (= n 0)
-                           (: - (-> (?arg int) ?arg))           ;; (- n 1) - passed as an argument to fact.
-                           (: * (-> (?arg ?ret) ?mult))         ;; (* n fact-result)
-                           (: if (-> (?eq int ?mult) ?ret)))))) ;; (if (= n 0) 1 (* n ...)) - returned as the result of fact.
+;; (: fact (-> (int) int))
+(assert! (: fact (-> (?n) ?fact)))
+(assert! (: n ?n))
+
+(display (caar (select (?type)
+                       (and (: = (-> (?n int) ?eq))           ;; (= n 0)
+                            (: - (-> (?n int) ?n))            ;; (- n 1) - passed as an argument to fact.
+                            (: * (-> (?n ?fact) ?mult))       ;; (* n fact-result)
+                            (: if (-> (?eq int ?mult) ?fact)) ;; (if (= n 0) 1 (* n ...)) - returned as the result of fact.
+                            (: fact ?type)))))
 
 ;; Generic type inference:
 (define (my-map f l)
@@ -164,11 +168,32 @@
 (assert! (: cons (-> (?d (list ?d)) (list ?d))))
 (assert! (: null (list ?e)))
 
-;; (: my-map (-> ((-> ?fa ?fb) ?l) ?ret))
-(display (car (select (?fa ?fb ?l ?ret)
-                      (and (: null? (-> (?l) ?null))
-                           (: null ?empty)
-                           (: car (-> (?l) ?fa))
-                           (: cdr (-> (?l) ?l))
-                           (: cons (-> (?fb ?ret) ?cons))
-                           (: if (-> (?null ?empty ?cons) ?ret))))))
+;; (: my-map (-> ((-> (?a) ?b) (list ?a)) (list ?b)))
+(assert! (: my-map (-> (?f ?l) ?my-map)))
+(assert! (: f ?f))
+(assert! (: l ?l))
+
+(display (caar (select (?type)
+                       (and (: null? (-> (?l) ?null?))
+                            (: null ?null)
+                            (: f (-> (?fa) ?fb))
+                            (: car (-> (?l) ?fa))
+                            (: cdr (-> (?l) ?l))
+                            (: cons (-> (?fb ?my-map) ?cons))
+                            (: if (-> (?null? ?null ?cons) ?my-map))
+                            (: my-map ?type)))))
+
+;; (: (my-map fact int-list) (list int))
+(reset!)
+
+(define int-list (list 1 2 3 4 5))
+(define result (my-map fact int-list))
+
+(assert! (: fact (-> (int) int)))
+(assert! (: my-map (-> ((-> (?a) ?b) (list ?a)) (list ?b))))
+(assert! (: int-list (list int)))
+
+(display (caar (select (?result)
+                       (and (: fact ?f)
+                            (: int-list ?l)
+                            (: my-map (-> (?f ?l) ?result))))))
