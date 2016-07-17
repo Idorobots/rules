@@ -130,3 +130,23 @@
                                (combine-logs () ?id ?attrs)
                                (and ((id . ?id) (level . error) . ?rest)
                                     ((id . ?id) . ?attrs))))))
+
+;; Typesystems anybody?
+(reset!)
+
+(define (fact arg)
+  (if (= arg 0)
+      1
+      (* arg (fact (- n 1)))))
+
+(assert! (= ?any ?any bool))
+(assert! (- int int int))
+(assert! (* int int int))
+(assert! (if bool ?t ?t ?t))
+
+;; fact: int -> int
+(display (car (select (?arg ?ret)
+                      (and (= ?arg int ?eq)
+                           (- ?arg int ?arg)
+                           (* ?arg ?ret ?mult)
+                           (if ?eq int ?mult ?ret)))))

@@ -10,11 +10,13 @@
      (let* ((store (ref null))
             (rule (compile-rule 'pattern
                                 (lambda (bindings)
+                                  (define (get v)
+                                    (let ((b (assoc v bindings)))
+                                      (cond ((false? b) #f)
+                                            ((variable? (cdr b)) (get (cdr b)))
+                                            ('else (cdr b)))))
                                   (assign! store
-                                           (cons (map (lambda (v)
-                                                        (let ((b (assoc v bindings)))
-                                                          (when b (cdr b))))
-                                                      'variables)
+                                           (cons (map get 'variables)
                                                  (deref store)))))))
        (map-facts (lambda (fact)
                     (assert-fact! rule fact)))
