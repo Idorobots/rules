@@ -134,19 +134,19 @@
 ;; Typesystems anybody?
 (reset!)
 
-(define (fact arg)
-  (if (= arg 0)
+(define (fact n)
+  (if (= n 0)
       1
-      (* arg (fact (- n 1)))))
+      (* n (fact (- n 1)))))
 
-(assert! (= ?any ?any bool))
-(assert! (- int int int))
-(assert! (* int int int))
-(assert! (if bool ?t ?t ?t))
+(assert! (: = (-> (?any ?any) bool)))
+(assert! (: - (-> (int int) int)))
+(assert! (: * (-> (int int) int)))
+(assert! (: if (-> (bool ?t ?t) ?t)))
 
-;; fact: int -> int
+;; (: fact (-> ?arg ?ret))
 (display (car (select (?arg ?ret)
-                      (and (= ?arg int ?eq)
-                           (- ?arg int ?arg)
-                           (* ?arg ?ret ?mult)
-                           (if ?eq int ?mult ?ret)))))
+                      (and (: = (-> (?arg int) ?eq))            ;; (= n 0)
+                           (: - (-> (?arg int) ?arg))           ;; (- n 1) - passed as an argument to fact.
+                           (: * (-> (?arg ?ret) ?mult))         ;; (* n fact-result)
+                           (: if (-> (?eq int ?mult) ?ret)))))) ;; (if (= n 0) 1 (* n ...)) - returned as the result of fact.
