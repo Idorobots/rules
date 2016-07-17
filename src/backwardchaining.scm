@@ -13,7 +13,8 @@
                                   (define (get v)
                                     (let ((b (assoc v bindings)))
                                       (cond ((false? b) #f)
-                                            ((variable? (cdr b)) (get (cdr b)))
+                                            ((variable? (cdr b)) (or (get (cdr b))
+                                                                     (cdr b)))
                                             ('else (cdr b)))))
                                   (assign! store
                                            (cons (map get 'variables)

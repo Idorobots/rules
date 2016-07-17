@@ -150,3 +150,25 @@
                            (: - (-> (?arg int) ?arg))           ;; (- n 1) - passed as an argument to fact.
                            (: * (-> (?arg ?ret) ?mult))         ;; (* n fact-result)
                            (: if (-> (?eq int ?mult) ?ret)))))) ;; (if (= n 0) 1 (* n ...)) - returned as the result of fact.
+
+;; Generic type inference:
+(define (my-map f l)
+  (if (null? l)
+      null
+      (cons (f (car l))
+            (map f (cdr l)))))
+
+(assert! (: null? (-> ((list ?a)) bool)))
+(assert! (: car (-> ((list ?b)) ?b)))
+(assert! (: cdr (-> ((list ?c)) (list ?c))))
+(assert! (: cons (-> (?d (list ?d)) (list ?d))))
+(assert! (: null (list ?e)))
+
+;; (: my-map (-> ((-> ?fa ?fb) ?l) ?ret))
+(display (car (select (?fa ?fb ?l ?ret)
+                      (and (: null? (-> (?l) ?null))
+                           (: null ?empty)
+                           (: car (-> (?l) ?fa))
+                           (: cdr (-> (?l) ?l))
+                           (: cons (-> (?fb ?ret) ?cons))
+                           (: if (-> (?null ?empty ?cons) ?ret))))))
