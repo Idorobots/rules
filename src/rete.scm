@@ -205,22 +205,28 @@
                    (deref *rules*))))
 
 ;; Syntax for convenience:
+(define (assert!* fact)
+  (add-fact! fact)
+  (assert-fact! (deref *rete*) fact))
+
 (define-syntax assert!
   (syntax-rules ()
-    ((assert! fact)
-     (begin (add-fact! 'fact)
-            (assert-fact! (deref *rete*) 'fact)))))
+    ((assert! fact) (assert!* 'fact))))
+
+(define (signal!* fact)
+  (signal-fact! (deref *rete*) fact))
 
 (define-syntax signal!
   (syntax-rules ()
-    ((signal! fact)
-     (signal-fact! (deref *rete*) 'fact))))
+    ((signal! fact) (signal!* 'fact))))
+
+(define (retract!* fact)
+  (remove-fact! fact)
+  (retract-fact! (deref *rete*) fact))
 
 (define-syntax retract!
   (syntax-rules ()
-    ((retract! fact)
-     (begin (remove-fact! 'fact)
-            (retract-fact! (deref *rete*) 'fact)))))
+    ((retract! fact) (retract!* 'fact))))
 
 (define-syntax whenever
   (syntax-rules (=>)
@@ -236,4 +242,3 @@
                                       (cdr val))))
                                 'vars))))
        id))))
-
