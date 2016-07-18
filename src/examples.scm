@@ -204,3 +204,34 @@
 (assert! (: int-list (list int)))
 
 (display (select (?result) (: result ?result)))
+
+;; Automagically find suitable functions:
+(reset!)
+
+(define *loggers* (ref '()))
+
+(define (register-callback! callback)
+  (assign! *loggers* (cons callback (deref *loggers*))))
+
+(define (log str)
+  (map (lambda (f) (f str))
+       (deref *loggers*)))
+
+(whenever (: ?function (-> (string) unit))
+          (?function) =>
+          (display "Found a suitable logger!") (newline)
+          (register-callback! ?function))
+
+;; ...elswhere in the code:
+
+(define (simple-log str)
+  (display "[LOG] ")
+  (display str)
+  (newline))
+
+(log "Hello world!") ;; Nothing happens.
+
+(assert!* `(: ,simple-log (-> (string) unit)))
+(assert!* `(: ,display (-> (string) unit)))
+
+(log "Hello world!") ;; Both loggers run.
