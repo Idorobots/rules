@@ -160,7 +160,7 @@
   (if (null? l)
       null
       (cons (f (car l))
-            (map f (cdr l)))))
+            (my-map f (cdr l)))))
 
 (assert! (: null? (-> ((list ?a)) bool)))
 (assert! (: car (-> ((list ?b)) ?b)))
