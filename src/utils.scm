@@ -75,3 +75,12 @@
 (define (constantly value)
   (lambda ignored
     value))
+
+(define (resolve bindings v)
+  (cond ((variable? v) (let ((a (assoc v bindings)))
+                         (if a
+                             (resolve bindings (cdr a))
+                             v))) ;; NOTE Most specific value is a free variable.
+        ((pair? v) (cons (resolve bindings (car v))
+                         (resolve bindings (cdr v))))
+        ('else v))) ;; NOTE Most specific type is a concrete value.

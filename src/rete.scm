@@ -230,15 +230,12 @@
 
 (define-syntax whenever
   (syntax-rules (=>)
-    ((whenever pattern vars => action ...)
+    ((whenever pattern variables => action ...)
      (let ((id (gensym 'rule)))
        (add-rule! id
                   (compile-rule 'pattern id)
                   (lambda (bindings)
-                    (apply (lambda vars action ...)
-                           (map (lambda (v)
-                                  (let ((val (assoc v bindings)))
-                                    (when val
-                                      (cdr val))))
-                                'vars))))
+                    (apply (lambda variables action ...)
+                           (map (partial resolve bindings)
+                                'variables))))
        id))))

@@ -183,17 +183,24 @@
                             (: if (-> (?null? ?null ?cons) ?my-map))
                             (: my-map ?type)))))
 
-;; (: (my-map fact int-list) (list int))
+;; Incremental typing:
 (reset!)
 
 (define int-list (list 1 2 3 4 5))
 (define result (my-map fact int-list))
 
+(whenever (and (: fact ?f)
+               (: int-list ?l)
+               (: my-map (-> (?f ?l) ?result)))
+          (?result) =>
+          (display "Finally got all the info to infere type of result!")
+          (assert!* `(: result ,?result)))
+
 (assert! (: fact (-> (int) int)))
 (assert! (: my-map (-> ((-> (?a) ?b) (list ?a)) (list ?b))))
+
+(display (select (?result) (: result ?result)))
+
 (assert! (: int-list (list int)))
 
-(display (caar (select (?result)
-                       (and (: fact ?f)
-                            (: int-list ?l)
-                            (: my-map (-> (?f ?l) ?result))))))
+(display (select (?result) (: result ?result)))
